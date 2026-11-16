@@ -1,0 +1,53 @@
+﻿@page "/"
+@inherits TrackerComponentBase
+
+<PageTitle>Today · Activity Tracker</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>Today</h1>
+        <p class="muted">@Tracker.Today.ToString("dddd d MMMM yyyy")</p>
+    </div>
+</div>
+
+<QuickAdd />
+
+@if (Planned.Count > 0)
+{
+    <section class="card">
+        <h2>Planned today</h2>
+        <ul class="planned-list">
+            @foreach (var a in Planned)
+            {
+                var done = Tracker.EntriesOn(Tracker.Today, a.Id).Any();
+                <li class="@(done ? "done" : "")">
+                    <ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="sm" Faded="@(!done)" />
+                    <span>@a.Name</span>
+                    <span class="muted">@(done ? "Done ✓" : "To do")</span>
+                </li>
+            }
+        </ul>
+    </section>
+}
+
+@if (WithGoals.Count > 0)
+{
+    <section class="card">
+        <h2>Objectives</h2>
+        @foreach (var a in WithGoals)
+        {
+            <GoalProgressBar Activity="a" Progress="GoalCalculator.Progress(a, Tracker.Entries, Tracker.Today, Tracker.FirstDayOfWeek)" Today="Tracker.Today" />
+        }
+    </section>
+}
+
+<section class="card">
+    <h2>Today's log</h2>
+    <EntryList Entries="Tracker.EntriesOn(Tracker.Today).Reverse().ToList()" EmptyText="Nothing logged today. Tap an activity above to add it." />
+</section>
+
+@code {
+    private IReadOnlyList<Activity> Planned => Tracker.DueOn(Tracker.Today);
+
+    private IReadOnlyList<Activity> WithGoals => Tracker.ActiveActivities.Where(a => a.Goal is not null).ToList();
+}

@@ -1,0 +1,77 @@
+@page "/activities"
+@inherits TrackerComponentBase
+@inject NavigationManager Nav
+
+<PageTitle>Activities · Activity Tracker</PageTitle>
+
+<div class="page-head">
+    <h1>Activities</h1>
+    <a class="btn primary" href="activities/new"><NavIcon Name="plus" /> New activity</a>
+</div>
+
+<section class="card">
+    <h2>Start from a template</h2>
+    <div class="chips">
+        @foreach (var (key, create) in ActivityTemplates.All)
+        {
+            var sample = create(Tracker.Today);
+            <button type="button" class="chip" style="--c:@sample.Color" data-testid="template-@key" @onclick="() => AddTemplateAsync(key)">
+                @sample.Icon @sample.Name
+            </button>
+        }
+    </div>
+</section>
+
+@if (Tracker.Activities.Count == 0)
+{
+    <p class="muted">No activities yet. Create one or pick a template above.</p>
+}
+else
+{
+    <ul class="activity-list" data-testid="activity-list">
+        @foreach (var a in Tracker.Activities)
+        {
+            <li class="card activity-row @(a.Archived ? "archived" : "")">
+                <ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="lg" />
+                <a class="activity-info" href="activities/@a.Id">
+                    <strong>@a.Name</strong>
+                    <span class="muted">
+                        @KindText(a) · @ScheduleCalculator.Describe(a.Schedule)
+                        @if (a.Goal is not null)
+                        {
+                            <text> · 🎯 @GoalCalculator.Describe(a)</text>
+                        }
+                        @if (a.Deadline is { } d)
+                        {
+                            <text> · ⏳ @d.ToString("d MMM yyyy")</text>
+                        }
+                        @if (a.Archived)
+                        {
+                            <text> · archived</text>
+                        }
+                    </span>
+                </a>
+                <div class="row-actions">
+                    <button type="button" class="icon-btn" aria-label="Move @a.Name up" @onclick="() => Tracker.MoveActivityAsync(a.Id, -1)"><NavIcon Name="up" /></button>
+                    <button type="button" class="icon-btn" aria-label="Move @a.Name down" @onclick="() => Tracker.MoveActivityAsync(a.Id, 1)"><NavIcon Name="down" /></button>
+                </div>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private static string KindText(Activity a) => a.Kind switch
+    {
+        ActivityKind.Quantity => $"Quantity ({a.Unit})",
+        ActivityKind.Scale => $"Scale ({a.Options.Count} options)",
+        _ => "Check",
+    };
+
+    private async Task AddTemplateAsync(string key)
+    {
+        var activity = ActivityTemplates.Create(key, Tracker.Today);
+        await Tracker.SaveActivityAsync(activity);
+        Nav.NavigateTo($"activities/{activity.Id}");
+    }
+}

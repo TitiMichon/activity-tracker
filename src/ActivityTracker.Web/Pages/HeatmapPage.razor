@@ -1,0 +1,73 @@
+@page "/heatmap"
+@inherits TrackerComponentBase
+@inject NavigationManager Nav
+
+<PageTitle>Heatmap · Activity Tracker</PageTitle>
+
+<div class="page-head">
+    <h1>Heatmap</h1>
+    <div class="toolbar">
+        <select class="input" aria-label="Period" value="@RangeKey" @onchange="@(e => SetQuery("range", e.Value?.ToString()))">
+            <option value="12m">Last 12 months</option>
+            @foreach (var y in Years)
+            {
+                <option value="@y">@y</option>
+            }
+        </select>
+        <label class="check">
+            <input type="checkbox" checked="@Separate" @onchange="@(e => SetQuery("separate", (bool)(e.Value ?? false) ? "1" : null))" />
+            One per activity
+        </label>
+    </div>
+</div>
+
+@if (!Separate)
+{
+    <div class="chips" role="group" aria-label="Activity">
+        <button type="button" class="chip @(Selected is null ? "active" : "")" @onclick="@(() => SetQuery("activity", null))">All</button>
+        @foreach (var a in Tracker.Activities)
+        {
+            <button type="button" class="chip @(Selected?.Id == a.Id ? "active" : "")" style="--c:@a.Color" @onclick="@(() => SetQuery("activity", a.Id.ToString()))">
+                @a.Icon @a.Name
+            </button>
+        }
+    </div>
+
+    <HeatmapPanel Activity="Selected" From="Range.From" To="Range.To" />
+}
+else
+{
+    @foreach (var a in Tracker.ActiveActivities)
+    {
+        <HeatmapPanel Activity="a" From="Range.From" To="Range.To" Compact="true" />
+    }
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "activity")] public string? ActivityParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "range")] public string? RangeParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "separate")] public string? SeparateParam { get; set; }
+
+    private Activity? Selected => Guid.TryParse(ActivityParam, out var id) ? Tracker.GetActivity(id) : null;
+
+    private bool Separate => SeparateParam == "1";
+
+    private string RangeKey => int.TryParse(RangeParam, out _) ? RangeParam! : "12m";
+
+    private (DateOnly From, DateOnly To) Range => int.TryParse(RangeParam, out var year)
+        ? (new DateOnly(year, 1, 1), new DateOnly(year, 12, 31))
+        : (Tracker.Today.AddYears(-1).AddDays(1), Tracker.Today);
+
+    private IEnumerable<int> Years
+    {
+        get
+        {
+            var first = Tracker.Entries.Count == 0 ? Tracker.Today.Year : Math.Min(Tracker.Today.Year, Tracker.Entries.Min(e => e.Timestamp.Year));
+            return Enumerable.Range(first, Tracker.Today.Year - first + 1).Reverse();
+        }
+    }
+
+    private void SetQuery(string name, string? value) => Nav.NavigateTo(Nav.GetUriWithQueryParameter(name, value));
+}

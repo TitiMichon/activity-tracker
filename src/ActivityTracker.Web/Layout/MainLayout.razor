@@ -1,0 +1,54 @@
+﻿@inherits LayoutComponentBase
+@inject TrackerService Tracker
+
+<div class="app">
+    <header class="topbar">
+        <a class="brand" href="">
+            <span class="brand-mark" aria-hidden="true">◆</span> Activity Tracker
+        </a>
+        <nav class="nav" aria-label="Main">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All"><NavIcon Name="today" /><span>Today</span></NavLink>
+            <NavLink class="nav-link" href="calendar"><NavIcon Name="calendar" /><span>Calendar</span></NavLink>
+            <NavLink class="nav-link" href="heatmap"><NavIcon Name="heatmap" /><span>Heatmap</span></NavLink>
+            <NavLink class="nav-link" href="activities"><NavIcon Name="activities" /><span>Activities</span></NavLink>
+            <NavLink class="nav-link" href="settings"><NavIcon Name="settings" /><span>Settings</span></NavLink>
+        </nav>
+    </header>
+
+    <main class="content">
+        @if (_loadError is not null)
+        {
+            <div class="card error" role="alert">
+                <h1>Could not load your data</h1>
+                <p>@_loadError</p>
+                <p>Go to <a href="settings">Settings</a> to import a backup or reset the data.</p>
+            </div>
+        }
+        else if (!Tracker.IsLoaded)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else
+        {
+            @Body
+        }
+    </main>
+
+    <ToastHost />
+</div>
+
+@code {
+    private string? _loadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await Tracker.EnsureLoadedAsync();
+        }
+        catch (FormatException ex)
+        {
+            _loadError = ex.Message;
+        }
+    }
+}

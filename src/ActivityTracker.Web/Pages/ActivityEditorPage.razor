@@ -1,0 +1,294 @@
+@page "/activities/new"
+@page "/activities/{Id:guid}"
+@inherits TrackerComponentBase
+@inject NavigationManager Nav
+@using ActivityTracker.Core.Persistence
+
+<PageTitle>@(IsNew ? "New activity" : _model?.Name) · Activity Tracker</PageTitle>
+
+@if (_model is null)
+{
+    <div class="card">
+        <h1>Activity not found</h1>
+        <a href="activities">Back to activities</a>
+    </div>
+    return;
+}
+
+<div class="page-head">
+    <h1>@(IsNew ? "New activity" : "Edit activity")</h1>
+    <ActivityBadge Icon="@_model.Icon" Color="@_model.Color" Size="lg" />
+</div>
+
+<form class="activity-form" @onsubmit="SaveAsync" @onsubmit:preventDefault data-testid="activity-form">
+    <section class="card">
+        <h2>General</h2>
+        <label class="field">
+            <span>Name</span>
+            <input class="input" @bind="_model.Name" @bind:event="oninput" placeholder="e.g. Guitar, Running, Mood" required data-testid="activity-name" />
+        </label>
+        <label class="field">
+            <span>Description <small>(optional)</small></span>
+            <input class="input" @bind="_model.Description" />
+        </label>
+        <div class="field">
+            <span>Logo</span>
+            <IconPicker @bind-Value="_model.Icon" />
+        </div>
+        <div class="field">
+            <span>Color</span>
+            <ColorPicker @bind-Value="_model.Color" />
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>What do you log?</h2>
+        <div class="segmented wide" role="group" aria-label="Type">
+            <button type="button" class="@(_model.Kind == ActivityKind.Check ? "active" : "")" @onclick="() => SetKind(ActivityKind.Check)">✓ Done / not done</button>
+            <button type="button" class="@(_model.Kind == ActivityKind.Quantity ? "active" : "")" @onclick="() => SetKind(ActivityKind.Quantity)"># Quantity</button>
+            <button type="button" class="@(_model.Kind == ActivityKind.Scale ? "active" : "")" @onclick="() => SetKind(ActivityKind.Scale)">☺ Scale / options</button>
+        </div>
+
+        @if (_model.Kind == ActivityKind.Quantity)
+        {
+            <div class="field-row">
+                <label class="field">
+                    <span>Unit</span>
+                    <input class="input" @bind="_model.Unit" placeholder="min, pages, km…" data-testid="activity-unit" />
+                </label>
+                <label class="field">
+                    <span>Default value <small>(quick add)</small></span>
+                    <input class="input" type="number" step="any" min="0" @bind="_model.DefaultValue" />
+                </label>
+            </div>
+        }
+        else if (_model.Kind == ActivityKind.Scale)
+        {
+            <p class="muted">Each option has its own icon and color, e.g. moods. A higher score means "better" in averages and the heatmap.</p>
+            <div class="options-editor">
+                @foreach (var o in _model.Options)
+                {
+                    <div class="option-edit" style="--c:@o.Color">
+                        <input class="input icon-input" @bind="o.Icon" aria-label="Option icon" maxlength="8" />
+                        <input class="input" @bind="o.Label" aria-label="Option label" placeholder="Label" />
+                        <input type="color" @bind="o.Color" aria-label="Option color" />
+                        <input class="input score" type="number" step="any" @bind="o.Score" aria-label="Option score" title="Score" />
+                        <button type="button" class="icon-btn" aria-label="Remove option @o.Label" @onclick="() => _model.Options.Remove(o)"><NavIcon Name="close" /></button>
+                    </div>
+                }
+            </div>
+            <div class="actions left">
+                <button type="button" class="btn ghost" @onclick="AddOption"><NavIcon Name="plus" /> Add option</button>
+                <button type="button" class="btn ghost" @onclick="UseMoodPreset">Use mood preset</button>
+            </div>
+        }
+    </section>
+
+    <section class="card">
+        <h2>Periodicity</h2>
+        <label class="field">
+            <span>When is it planned?</span>
+            <select class="input" @bind="_model.Schedule.Frequency" data-testid="activity-frequency">
+                <option value="@Frequency.None">Anytime (no plan)</option>
+                <option value="@Frequency.Daily">Every day</option>
+                <option value="@Frequency.Weekly">Some days of the week</option>
+                <option value="@Frequency.EveryNDays">Every N days</option>
+                <option value="@Frequency.Monthly">Once a month</option>
+            </select>
+        </label>
+        @switch (_model.Schedule.Frequency)
+        {
+            case Frequency.Weekly:
+                <div class="day-toggles" role="group" aria-label="Days of week">
+                    @foreach (var d in ScheduleCalculator.OrderedWeek(Tracker.FirstDayOfWeek))
+                    {
+                        var on = _model.Schedule.DaysOfWeek.Contains(d);
+                        <button type="button" class="day-toggle @(on ? "active" : "")" aria-pressed="@(on ? "true" : "false")" @onclick="() => ToggleDay(d)">@d.ToString()[..2]</button>
+                    }
+                </div>
+                break;
+            case Frequency.EveryNDays:
+                <label class="field">
+                    <span>Every how many days?</span>
+                    <input class="input" type="number" min="1" @bind="_model.Schedule.Interval" />
+                </label>
+                break;
+            case Frequency.Monthly:
+                <label class="field">
+                    <span>Day of month</span>
+                    <input class="input" type="number" min="1" max="31" @bind="_model.Schedule.DayOfMonth" />
+                </label>
+                break;
+        }
+        <div class="field-row">
+            <label class="field">
+                <span>Start date</span>
+                <input class="input" type="date" @bind="_model.StartDate" />
+            </label>
+            <label class="field">
+                <span>Deadline <small>(optional)</small></span>
+                <input class="input" type="date" @bind="_model.Deadline" data-testid="activity-deadline" />
+            </label>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Objective</h2>
+        <label class="check">
+            <input type="checkbox" @bind="_hasGoal" data-testid="activity-has-goal" />
+            Set an objective
+        </label>
+        @if (_hasGoal)
+        {
+            <div class="field-row goal-row">
+                <label class="field">
+                    <span>Target</span>
+                    <input class="input" type="number" min="0" step="any" @bind="_goal.Target" data-testid="goal-target" />
+                </label>
+                @if (_model.Kind == ActivityKind.Quantity)
+                {
+                    <label class="field">
+                        <span>Measured as</span>
+                        <select class="input" @bind="_goal.Metric">
+                            <option value="@GoalMetric.Count">times</option>
+                            <option value="@GoalMetric.Sum">@(string.IsNullOrWhiteSpace(_model.Unit) ? "total value" : _model.Unit)</option>
+                        </select>
+                    </label>
+                }
+                <label class="field">
+                    <span>Per</span>
+                    <select class="input" @bind="_goal.Period">
+                        <option value="@GoalPeriod.Day">day</option>
+                        <option value="@GoalPeriod.Week">week</option>
+                        <option value="@GoalPeriod.Month">month</option>
+                        <option value="@GoalPeriod.Year">year</option>
+                        <option value="@GoalPeriod.Total">total (until deadline)</option>
+                    </select>
+                </label>
+            </div>
+        }
+    </section>
+
+    @if (_errors.Count > 0)
+    {
+        <ul class="error card" role="alert" data-testid="activity-errors">
+            @foreach (var e in _errors)
+            {
+                <li>@e</li>
+            }
+        </ul>
+    }
+
+    <div class="actions sticky">
+        @if (!IsNew)
+        {
+            <ConfirmButton Text="Delete" ConfirmText="Delete it and all its entries?" OnConfirm="DeleteAsync" />
+            <button type="button" class="btn ghost" @onclick="ToggleArchiveAsync">@(_model.Archived ? "Unarchive" : "Archive")</button>
+        }
+        <span class="spacer"></span>
+        <a class="btn ghost" href="activities">Cancel</a>
+        <button type="submit" class="btn primary" data-testid="activity-save">Save</button>
+    </div>
+</form>
+
+@code {
+    private Activity? _model;
+    private Goal _goal = new();
+    private bool _hasGoal;
+    private IReadOnlyList<string> _errors = [];
+    private Guid? _loadedFor;
+
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    protected override void OnParametersSet()
+    {
+        if (_loadedFor == (Id ?? Guid.Empty) && _model is not null)
+        {
+            return;
+        }
+
+        _loadedFor = Id ?? Guid.Empty;
+        _errors = [];
+        if (Id is { } id)
+        {
+            _model = Tracker.GetActivity(id) is { } existing ? TrackerJson.Clone(existing) : null;
+        }
+        else
+        {
+            _model = new Activity { StartDate = Tracker.Today, Color = ColorPicker.Palette[Tracker.Activities.Count % ColorPicker.Palette.Length] };
+        }
+
+        _hasGoal = _model?.Goal is not null;
+        _goal = _model?.Goal ?? new Goal();
+    }
+
+    private void SetKind(ActivityKind kind)
+    {
+        _model!.Kind = kind;
+
+        // Quantity objectives are usually about the total ("120 min per week"), others about frequency.
+        _goal.Metric = kind == ActivityKind.Quantity ? GoalMetric.Sum : GoalMetric.Count;
+        if (kind == ActivityKind.Scale && _model.Options.Count == 0)
+        {
+            UseMoodPreset();
+        }
+    }
+
+    private void AddOption() =>
+        _model!.Options.Add(new ActivityOption { Label = "", Icon = "⭐", Color = _model.Color, Score = _model.Options.Count + 1 });
+
+    private void UseMoodPreset() => _model!.Options = ActivityTemplates.Create("mood", Tracker.Today).Options;
+
+    private void ToggleDay(DayOfWeek day)
+    {
+        var days = _model!.Schedule.DaysOfWeek;
+        if (!days.Remove(day))
+        {
+            days.Add(day);
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        var model = _model!;
+        if (_hasGoal && model.Kind != ActivityKind.Quantity)
+        {
+            _goal.Metric = GoalMetric.Count;
+        }
+
+        model.Goal = _hasGoal ? _goal : null;
+        if (model.Kind != ActivityKind.Scale)
+        {
+            model.Options = [];
+        }
+
+        if (model.Kind != ActivityKind.Quantity)
+        {
+            model.Unit = null;
+            model.DefaultValue = null;
+        }
+
+        _errors = ActivityValidator.Validate(model);
+        if (_errors.Count > 0)
+        {
+            return;
+        }
+
+        await Tracker.SaveActivityAsync(model);
+        Nav.NavigateTo("activities");
+    }
+
+    private async Task ToggleArchiveAsync()
+    {
+        _model!.Archived = !_model.Archived;
+        await Tracker.SetArchivedAsync(_model.Id, _model.Archived);
+    }
+
+    private async Task DeleteAsync()
+    {
+        await Tracker.DeleteActivityAsync(_model!.Id);
+        Nav.NavigateTo("activities");
+    }
+}

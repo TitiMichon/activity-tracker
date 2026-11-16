@@ -1,0 +1,33 @@
+<div class="icon-picker">
+    <input class="input icon-input" value="@Value" maxlength="8" aria-label="@Label" placeholder="@Placeholder"
+           @onchange="e => SetAsync(e.Value?.ToString() ?? string.Empty)" />
+    <div class="icon-suggestions" role="group" aria-label="Suggested icons">
+        @foreach (var icon in Suggestions)
+        {
+            <button type="button" class="icon-choice @(icon == Value ? "selected" : "")" aria-label="Icon @icon" @onclick="() => SetAsync(icon)">@icon</button>
+        }
+    </div>
+</div>
+
+@code {
+    public static readonly string[] Suggestions =
+    [
+        "🎸", "🎹", "🎻", "🥁", "🎤", "🎧", "🏃", "🚴", "🏊", "🏋️", "⚽", "🧘", "🥾", "🧗",
+        "📚", "📖", "✍️", "🧠", "💡", "🗣️", "😄", "🙂", "😐", "😕", "😫", "😴", "💧", "🥗",
+        "🍎", "☕", "💊", "🚭", "💼", "💻", "🧹", "🌱", "🐶", "🎨", "📷", "🎮", "💰", "❤️", "⭐", "🎯", "🔥", "✅",
+    ];
+
+    [Parameter] public string Value { get; set; } = "";
+
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter] public string Label { get; set; } = "Icon";
+
+    [Parameter] public string Placeholder { get; set; } = "Emoji";
+
+    private Task SetAsync(string icon)
+    {
+        Value = icon.Trim();
+        return ValueChanged.InvokeAsync(Value);
+    }
+}

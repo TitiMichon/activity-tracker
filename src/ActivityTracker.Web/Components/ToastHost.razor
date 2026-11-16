@@ -1,0 +1,22 @@
+@implements IDisposable
+@inject ToastService Toasts
+
+@if (Toasts.Current is { } toast)
+{
+    <div class="toast" role="status" aria-live="polite">
+        <span>@toast.Message</span>
+        @if (toast.ActionLabel is not null)
+        {
+            <button type="button" class="btn link" @onclick="Toasts.RunActionAsync">@toast.ActionLabel</button>
+        }
+        <button type="button" class="icon-btn" aria-label="Dismiss" @onclick="Toasts.Dismiss"><NavIcon Name="close" /></button>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized() => Toasts.Changed += OnChanged;
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Toasts.Changed -= OnChanged;
+}

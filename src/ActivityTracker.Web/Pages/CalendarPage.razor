@@ -1,0 +1,198 @@
+@page "/calendar"
+@inherits TrackerComponentBase
+@inject NavigationManager Nav
+
+<PageTitle>Calendar · Activity Tracker</PageTitle>
+
+<div class="page-head">
+    <h1 data-testid="calendar-title">@Title</h1>
+    <div class="toolbar">
+        <div class="segmented" role="group" aria-label="View">
+            @foreach (var v in new[] { "day", "week", "month" })
+            {
+                <button type="button" class="@(View == v ? "active" : "")" aria-pressed="@(View == v ? "true" : "false")" @onclick="@(() => Go(v, Current))">
+                    @(char.ToUpperInvariant(v[0]) + v[1..])
+                </button>
+            }
+        </div>
+        <div class="nav-buttons">
+            <button type="button" class="icon-btn" aria-label="Previous" @onclick="() => Go(View, Shift(-1))"><NavIcon Name="prev" /></button>
+            <button type="button" class="btn ghost" @onclick="() => Go(View, Tracker.Today)">Today</button>
+            <button type="button" class="icon-btn" aria-label="Next" @onclick="() => Go(View, Shift(1))"><NavIcon Name="next" /></button>
+        </div>
+        <select class="input filter" aria-label="Filter by activity" value="@(Filter?.ToString() ?? "")" @onchange="OnFilterChanged">
+            <option value="">All activities</option>
+            @foreach (var a in Tracker.Activities)
+            {
+                <option value="@a.Id">@a.Icon @a.Name</option>
+            }
+        </select>
+    </div>
+</div>
+
+@switch (View)
+{
+    case "month":
+        <div class="month card" data-testid="month-view">
+            @foreach (var d in ScheduleCalculator.OrderedWeek(Tracker.FirstDayOfWeek))
+            {
+                <div class="month-dow">@d.ToString()[..3]</div>
+            }
+            @foreach (var week in CalendarMath.MonthWeeks(Current.Year, Current.Month, Tracker.FirstDayOfWeek))
+            {
+                foreach (var day in week)
+                {
+                    var items = DayItems(day);
+                    <button type="button" class="month-day @(day.Month != Current.Month ? "other" : "") @(day == Tracker.Today ? "today" : "")"
+                            aria-label="@day.ToString("dddd d MMMM"): @items.Count(i => !i.Planned) entries" data-date="@day.ToString("yyyy-MM-dd")"
+                            @onclick="@(() => Go("day", day))">
+                        <span class="month-num">@day.Day</span>
+                        <span class="month-icons">
+                            @foreach (var item in items.Take(MaxIcons))
+                            {
+                                <ActivityBadge Icon="@item.Icon" Color="@item.Color" Size="sm" Faded="@item.Planned" />
+                            }
+                            @if (items.Count > MaxIcons)
+                            {
+                                <span class="more">+@(items.Count - MaxIcons)</span>
+                            }
+                        </span>
+                    </button>
+                }
+            }
+        </div>
+        break;
+
+    case "week":
+        <div class="week" data-testid="week-view">
+            @foreach (var day in CalendarMath.WeekDays(Current, Tracker.FirstDayOfWeek))
+            {
+                var entries = Tracker.EntriesOn(day, Filter).ToList();
+                <div class="week-col card @(day == Tracker.Today ? "today" : "")">
+                    <button type="button" class="week-head" @onclick="@(() => Go("day", day))">
+                        <span class="muted">@day.ToString("ddd")</span> <strong>@day.Day</strong>
+                    </button>
+                    @foreach (var e in entries)
+                    {
+                        if (Tracker.GetActivity(e.ActivityId) is not { } a)
+                        {
+                            continue;
+                        }
+
+                        <button type="button" class="week-item" style="--c:@EntryAppearance.Color(a, e)" @onclick="() => _editing = e">
+                            <span>@EntryAppearance.Icon(a, e)</span>
+                            <span class="week-item-text">@a.Name <small>@EntryAppearance.ValueText(a, e)</small></span>
+                        </button>
+                    }
+                    @foreach (var a in Missing(day, entries))
+                    {
+                        <div class="week-item planned" style="--c:@a.Color" title="Planned">
+                            <span>@a.Icon</span><span class="week-item-text">@a.Name <small>planned</small></span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        break;
+
+    default:
+        var dayEntries = Tracker.EntriesOn(Current, Filter).ToList();
+        <div class="day" data-testid="day-view">
+            <QuickAdd Date="Current" />
+            @if (Missing(Current, dayEntries).ToList() is { Count: > 0 } missing)
+            {
+                <section class="card">
+                    <h2>Planned</h2>
+                    <ul class="planned-list">
+                        @foreach (var a in missing)
+                        {
+                            <li><ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="sm" Faded="true" /><span>@a.Name</span><span class="muted">Not done</span></li>
+                        }
+                    </ul>
+                </section>
+            }
+            <section class="card">
+                <h2>Log</h2>
+                <EntryList Entries="dayEntries" EmptyText="Nothing logged on this day." />
+            </section>
+        </div>
+        break;
+}
+
+@if (_editing is not null)
+{
+    <EntryEditor Entry="_editing" OnClose="() => _editing = null" />
+}
+
+@code {
+    private const int MaxIcons = 4;
+    private Entry? _editing;
+
+    [SupplyParameterFromQuery(Name = "view")] public string? ViewParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "date")] public string? DateParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "activity")] public string? ActivityParam { get; set; }
+
+    private string View => ViewParam is "day" or "week" ? ViewParam : "month";
+
+    private DateOnly Current =>
+        DateOnly.TryParseExact(DateParam, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : Tracker.Today;
+
+    private Guid? Filter => Guid.TryParse(ActivityParam, out var id) ? id : null;
+
+    private string Title => View switch
+    {
+        "day" => Current.ToString("dddd d MMMM yyyy"),
+        "week" => WeekTitle(),
+        _ => Current.ToString("MMMM yyyy"),
+    };
+
+    private string WeekTitle()
+    {
+        var days = CalendarMath.WeekDays(Current, Tracker.FirstDayOfWeek);
+        return days[0].Month == days[6].Month
+            ? $"{days[0].Day} – {days[6]:d MMM yyyy}"
+            : $"{days[0]:d MMM} – {days[6]:d MMM yyyy}";
+    }
+
+    private DateOnly Shift(int direction) => View switch
+    {
+        "day" => Current.AddDays(direction),
+        "week" => Current.AddDays(7 * direction),
+        _ => Current.AddMonths(direction),
+    };
+
+    private sealed record DayItem(string Icon, string Color, bool Planned);
+
+    private List<DayItem> DayItems(DateOnly day)
+    {
+        var entries = Tracker.EntriesOn(day, Filter).ToList();
+        var items = new List<DayItem>();
+        foreach (var e in entries)
+        {
+            if (Tracker.GetActivity(e.ActivityId) is { } a)
+            {
+                items.Add(new DayItem(EntryAppearance.Icon(a, e), EntryAppearance.Color(a, e), false));
+            }
+        }
+
+        items.AddRange(Missing(day, entries).Select(a => new DayItem(a.Icon, a.Color, true)));
+        return items;
+    }
+
+    /// <summary>Activities planned on a day that have no entry yet.</summary>
+    private IEnumerable<Activity> Missing(DateOnly day, IReadOnlyCollection<Entry> entries) =>
+        Tracker.DueOn(day).Where(a => (Filter is null || a.Id == Filter) && entries.All(e => e.ActivityId != a.Id));
+
+    private void Go(string view, DateOnly date) =>
+        Nav.NavigateTo(Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["view"] = view,
+            ["date"] = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["activity"] = Filter?.ToString(),
+        }));
+
+    private void OnFilterChanged(ChangeEventArgs e) =>
+        Nav.NavigateTo(Nav.GetUriWithQueryParameter("activity", string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value.ToString()));
+}

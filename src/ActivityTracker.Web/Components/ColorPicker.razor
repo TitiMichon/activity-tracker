@@ -1,0 +1,30 @@
+<div class="color-picker" role="group" aria-label="@Label">
+    @foreach (var c in Palette)
+    {
+        <button type="button" class="swatch @(string.Equals(c, Value, StringComparison.OrdinalIgnoreCase) ? "selected" : "")"
+                style="--c:@c" title="@c" aria-label="Color @c" @onclick="() => SetAsync(c)"></button>
+    }
+    <label class="swatch custom" title="Custom color">
+        <input type="color" value="@Value" aria-label="Custom color" @onchange="e => SetAsync(e.Value?.ToString() ?? Value)" />
+    </label>
+</div>
+
+@code {
+    public static readonly string[] Palette =
+    [
+        "#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16", "#22c55e",
+        "#14b8a6", "#0ea5e9", "#3b82f6", "#4f46e5", "#8b5cf6", "#d946ef", "#ec4899", "#64748b",
+    ];
+
+    [Parameter] public string Value { get; set; } = "#4f46e5";
+
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter] public string Label { get; set; } = "Color";
+
+    private Task SetAsync(string color)
+    {
+        Value = color;
+        return ValueChanged.InvokeAsync(color);
+    }
+}

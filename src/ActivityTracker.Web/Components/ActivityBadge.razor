@@ -1,0 +1,14 @@
+<span class="badge badge-@Size @(Faded ? "faded" : "")" style="--c:@Color" title="@Title" aria-hidden="@(Title is null ? "true" : "false")">@Icon</span>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "";
+
+    [Parameter] public string Color { get; set; } = "#888888";
+
+    /// <summary>sm, md or lg.</summary>
+    [Parameter] public string Size { get; set; } = "md";
+
+    [Parameter] public bool Faded { get; set; }
+
+    [Parameter] public string? Title { get; set; }
+}

@@ -1,0 +1,82 @@
+@page "/settings"
+@inherits TrackerComponentBase
+@inject IJSRuntime JS
+@inject ToastService Toasts
+
+<PageTitle>Settings · Activity Tracker</PageTitle>
+
+<div class="page-head">
+    <h1>Settings</h1>
+</div>
+
+<section class="card">
+    <h2>Calendar</h2>
+    <label class="field">
+        <span>First day of the week</span>
+        <select class="input" value="@Tracker.FirstDayOfWeek" @onchange="OnFirstDayChanged" data-testid="first-day">
+            @foreach (var d in Enum.GetValues<DayOfWeek>())
+            {
+                <option value="@d">@d</option>
+            }
+        </select>
+    </label>
+</section>
+
+<section class="card">
+    <h2>Your data</h2>
+    <p class="muted">
+        Everything is stored on this device, in your browser. Export a backup regularly, or to move your data to another device.
+        You have @Tracker.Activities.Count activities and @Tracker.Entries.Count entries.
+    </p>
+    <div class="actions left">
+        <button type="button" class="btn primary" @onclick="ExportAsync">Export backup (JSON)</button>
+        <label class="btn ghost file-btn">
+            Import backup…
+            <InputFile accept=".json,application/json" OnChange="ImportAsync" data-testid="import-file" />
+        </label>
+    </div>
+    @if (_importError is not null)
+    {
+        <p class="error" role="alert">@_importError</p>
+    }
+</section>
+
+<section class="card">
+    <h2>Danger zone</h2>
+    <p class="muted">Delete all activities and entries from this device.</p>
+    <ConfirmButton Text="Delete all data" ConfirmText="Really delete everything?" OnConfirm="ClearAsync" />
+</section>
+
+<p class="muted version" data-testid="app-version">Activity Tracker v@(AppInfo.Version)</p>
+
+@code {
+    private const long MaxImportBytes = 20 * 1024 * 1024;
+    private string? _importError;
+
+    private Task OnFirstDayChanged(ChangeEventArgs e) =>
+        Enum.TryParse<DayOfWeek>(e.Value?.ToString(), out var day) ? Tracker.SetFirstDayOfWeekAsync(day) : Task.CompletedTask;
+
+    private async Task ExportAsync() =>
+        await JS.InvokeVoidAsync("tracker.download", $"activity-tracker-{Tracker.Today:yyyy-MM-dd}.json", Tracker.Export());
+
+    private async Task ImportAsync(InputFileChangeEventArgs e)
+    {
+        _importError = null;
+        try
+        {
+            using var reader = new StreamReader(e.File.OpenReadStream(MaxImportBytes));
+            await Tracker.ImportAsync(await reader.ReadToEndAsync());
+            Toasts.Show($"Imported {Tracker.Activities.Count} activities and {Tracker.Entries.Count} entries.");
+        }
+        catch (Exception ex) when (ex is FormatException or IOException)
+        {
+            _importError = ex.Message;
+        }
+    }
+
+    private async Task ClearAsync()
+    {
+        await Tracker.ClearAsync();
+        Toasts.Show("All data deleted.");
+    }
+}

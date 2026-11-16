@@ -1,0 +1,47 @@
+@inherits TrackerComponentBase
+
+@if (!Entries.Any())
+{
+    <p class="muted">@EmptyText</p>
+}
+else
+{
+    <ul class="entry-list" data-testid="entry-list">
+        @foreach (var e in Entries)
+        {
+            if (Tracker.GetActivity(e.ActivityId) is not { } a)
+            {
+                continue;
+            }
+
+            <li>
+                <button type="button" class="entry-row" aria-label="Edit @a.Name entry" @onclick="() => _editing = e">
+                    <ActivityBadge Icon="@EntryAppearance.Icon(a, e)" Color="@EntryAppearance.Color(a, e)" />
+                    <span class="entry-main">
+                        <span class="entry-title">@a.Name <span class="entry-value">@EntryAppearance.ValueText(a, e)</span></span>
+                        @if (!string.IsNullOrEmpty(e.Note))
+                        {
+                            <span class="entry-note">@e.Note</span>
+                        }
+                    </span>
+                    <span class="entry-time">@(ShowDate ? e.Timestamp.ToString("ddd d MMM, HH:mm") : e.Timestamp.ToString("HH:mm"))</span>
+                </button>
+            </li>
+        }
+    </ul>
+}
+
+@if (_editing is not null)
+{
+    <EntryEditor Entry="_editing" OnClose="() => _editing = null" />
+}
+
+@code {
+    private Entry? _editing;
+
+    [Parameter, EditorRequired] public IEnumerable<Entry> Entries { get; set; } = [];
+
+    [Parameter] public bool ShowDate { get; set; }
+
+    [Parameter] public string EmptyText { get; set; } = "Nothing logged yet.";
+}

@@ -1,0 +1,28 @@
+@* Two-step button for destructive actions: first click arms it, second click confirms. *@
+<button type="button" class="btn @(_armed ? "danger" : CssClass)" @onclick="ClickAsync" @onfocusout="() => _armed = false">
+    @(_armed ? ConfirmText : Text)
+</button>
+
+@code {
+    private bool _armed;
+
+    [Parameter, EditorRequired] public string Text { get; set; } = "";
+
+    [Parameter] public string ConfirmText { get; set; } = "Click again to confirm";
+
+    [Parameter] public string CssClass { get; set; } = "ghost";
+
+    [Parameter] public EventCallback OnConfirm { get; set; }
+
+    private async Task ClickAsync()
+    {
+        if (!_armed)
+        {
+            _armed = true;
+            return;
+        }
+
+        _armed = false;
+        await OnConfirm.InvokeAsync();
+    }
+}

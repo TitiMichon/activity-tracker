@@ -1,0 +1,49 @@
+@if (Progress is { } p)
+{
+    <div class="goal" style="--c:@Activity.Color" data-testid="goal">
+        <div class="goal-head">
+            <ActivityBadge Icon="@Activity.Icon" Color="@Activity.Color" Size="sm" />
+            <span class="goal-name">@Activity.Name</span>
+            <span class="goal-numbers">@Format(p.Current) / @Format(p.Target) @Unit @(p.IsMet ? "✅" : "")</span>
+        </div>
+        <div class="progress" role="progressbar" aria-label="@Activity.Name objective" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@((int)(p.Ratio * 100))">
+            <div class="progress-fill" style="width:@((p.Ratio * 100).ToString("0.#", CultureInfo.InvariantCulture))%"></div>
+        </div>
+        <div class="goal-foot muted">
+            @GoalCalculator.Describe(Activity) · @PeriodText(p)
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Activity Activity { get; set; } = default!;
+
+    [Parameter, EditorRequired] public GoalProgress? Progress { get; set; }
+
+    [Parameter] public DateOnly Today { get; set; }
+
+    private string Unit => Activity.Goal?.Metric == GoalMetric.Sum && Activity.Kind == ActivityKind.Quantity ? Activity.Unit ?? "" : "times";
+
+    private static string Format(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+
+    private string PeriodText(GoalProgress p)
+    {
+        if (p.IsMet)
+        {
+            return "objective reached";
+        }
+
+        var daysLeft = p.End.DayNumber - Today.DayNumber;
+        if (daysLeft < 0)
+        {
+            return "period ended";
+        }
+
+        return daysLeft switch
+        {
+            0 => "last day",
+            1 => "1 day left",
+            _ => $"{daysLeft} days left",
+        };
+    }
+}

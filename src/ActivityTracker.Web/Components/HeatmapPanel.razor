@@ -1,0 +1,62 @@
+@inherits TrackerComponentBase
+@inject NavigationManager Nav
+
+<section class="card heatmap-panel @(Compact ? "compact" : "")" data-testid="heatmap-panel">
+    <div class="heatmap-title">
+        @if (Activity is { } a)
+        {
+            <ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="sm" />
+            <h2>@a.Name</h2>
+        }
+        else
+        {
+            <h2>All activities</h2>
+        }
+    </div>
+
+    <div class="stats">
+        <div class="stat"><span class="stat-value" data-testid="stat-active-days">@Map.ActiveDays</span><span class="stat-label">active days</span></div>
+        <div class="stat"><span class="stat-value">@Map.TotalEntries</span><span class="stat-label">entries</span></div>
+        @if (Activity is { } act)
+        {
+            @if (act.Kind == ActivityKind.Quantity)
+            {
+                <div class="stat"><span class="stat-value">@Map.Cells.Sum(c => c.Value).ToString("0.#", CultureInfo.InvariantCulture)</span><span class="stat-label">@(act.Unit ?? "total")</span></div>
+            }
+            else if (act.Kind == ActivityKind.Scale && Map.ActiveDays > 0)
+            {
+                var avg = Map.Cells.Where(c => c.EntryCount > 0).Average(c => c.Value);
+                var option = HeatmapBuilder.ClosestOption(act, avg);
+                <div class="stat"><span class="stat-value">@option?.Icon @avg.ToString("0.0", CultureInfo.InvariantCulture)</span><span class="stat-label">average</span></div>
+            }
+            <div class="stat"><span class="stat-value">@StreakCalculator.Current(act, Tracker.Entries, Tracker.Today)</span><span class="stat-label">current streak</span></div>
+            <div class="stat"><span class="stat-value">@StreakCalculator.Longest(act, Tracker.Entries, Tracker.Today)</span><span class="stat-label">best streak</span></div>
+        }
+    </div>
+
+    <HeatmapGrid Map="Map" DefaultColor="@(Activity?.Color ?? "var(--accent)")" FirstDayOfWeek="Tracker.FirstDayOfWeek" Today="Tracker.Today"
+                 Label="@($"{Activity?.Name ?? "All activities"} heatmap")" ValueFormatter="FormatValue" OnDayClick="OpenDay"
+                 Options="@(Activity?.Kind == ActivityKind.Scale ? Activity.Options : null)" />
+</section>
+
+@code {
+    [Parameter] public Activity? Activity { get; set; }
+
+    [Parameter, EditorRequired] public DateOnly From { get; set; }
+
+    [Parameter, EditorRequired] public DateOnly To { get; set; }
+
+    [Parameter] public bool Compact { get; set; }
+
+    private Heatmap Map => HeatmapBuilder.Build(Activity, Tracker.Entries, From, To, Tracker.FirstDayOfWeek);
+
+    private string FormatValue(HeatmapCell cell) => Activity?.Kind switch
+    {
+        ActivityKind.Quantity => $"{cell.Value:0.##} {Activity.Unit}".TrimEnd(),
+        ActivityKind.Scale => HeatmapBuilder.ClosestOption(Activity, cell.Value)?.Label ?? "",
+        _ => "",
+    };
+
+    private void OpenDay(DateOnly date) =>
+        Nav.NavigateTo($"calendar?view=day&date={date:yyyy-MM-dd}" + (Activity is null ? "" : $"&activity={Activity.Id}"));
+}

@@ -1,0 +1,202 @@
+@inherits TrackerComponentBase
+
+<div class="modal-backdrop" @onclick="CloseAsync"></div>
+<div class="modal card" role="dialog" aria-modal="true" aria-labelledby="entry-editor-title" data-testid="entry-editor">
+    <div class="modal-head">
+        <h2 id="entry-editor-title">@(IsNew ? "New entry" : "Edit entry")</h2>
+        <button type="button" class="icon-btn" aria-label="Close" @onclick="CloseAsync"><NavIcon Name="close" /></button>
+    </div>
+
+    <label class="field">
+        <span>Activity</span>
+        <select class="input" value="@_activityId" disabled="@(!IsNew)" @onchange="OnActivityChanged">
+            @foreach (var a in Tracker.Activities.Where(a => !a.Archived || a.Id.ToString() == _activityId))
+            {
+                <option value="@a.Id">@a.Icon @a.Name</option>
+            }
+        </select>
+    </label>
+
+    <div class="field-row">
+        <label class="field">
+            <span>Date</span>
+            <input class="input" type="date" @bind="_date" />
+        </label>
+        <label class="field">
+            <span>Time</span>
+            <input class="input" type="time" @bind="_time" @bind:format="HH:mm" />
+        </label>
+    </div>
+
+    @if (SelectedActivity is { } activity)
+    {
+        @if (activity.Kind == ActivityKind.Quantity)
+        {
+            <label class="field">
+                <span>Value @(string.IsNullOrEmpty(activity.Unit) ? "" : $"({activity.Unit})")</span>
+                <input class="input" type="number" step="any" min="0" @bind="_value" />
+            </label>
+        }
+        else if (activity.Kind == ActivityKind.Scale)
+        {
+            <div class="field">
+                <span>Choice</span>
+                <div class="option-row" role="radiogroup" aria-label="Choice">
+                    @foreach (var o in activity.Options)
+                    {
+                        <button type="button" role="radio" aria-checked="@(o.Id == _optionId ? "true" : "false")"
+                                class="option-btn @(o.Id == _optionId ? "selected" : "")" style="--c:@o.Color" @onclick="() => _optionId = o.Id">
+                            <span class="option-icon">@o.Icon</span><span>@o.Label</span>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+
+        <label class="field">
+            <span>Note</span>
+            <textarea class="input" rows="2" @bind="_note"></textarea>
+        </label>
+
+        <details class="custom-look" open="@(_icon is not null || _color is not null)">
+            <summary>Custom icon &amp; color for this entry</summary>
+            <div class="field">
+                <span>Icon <small>(empty = default @DefaultIcon(activity))</small></span>
+                <IconPicker @bind-Value="IconValue" Placeholder="@DefaultIcon(activity)" />
+            </div>
+            <div class="field">
+                <span>Color</span>
+                <label class="check">
+                    <input type="checkbox" checked="@(_color is not null)" @onchange="e => _color = (bool)(e.Value ?? false) ? DefaultColor(activity) : null" />
+                    Use a custom color
+                </label>
+                @if (_color is not null)
+                {
+                    <ColorPicker @bind-Value="ColorValue" />
+                }
+            </div>
+        </details>
+    }
+
+    @if (_error is not null)
+    {
+        <p class="error" role="alert">@_error</p>
+    }
+
+    <div class="actions">
+        @if (!IsNew)
+        {
+            <ConfirmButton Text="Delete" ConfirmText="Delete entry?" OnConfirm="DeleteAsync" />
+        }
+        <span class="spacer"></span>
+        <button type="button" class="btn ghost" @onclick="CloseAsync">Cancel</button>
+        <button type="button" class="btn primary" data-testid="entry-save" @onclick="SaveAsync">Save</button>
+    </div>
+</div>
+
+@code {
+    private string _activityId = "";
+    private DateOnly _date;
+    private TimeOnly _time;
+    private double? _value;
+    private string? _optionId;
+    private string? _note;
+    private string? _icon;
+    private string? _color;
+    private string? _error;
+    private Guid _entryId;
+
+    [Parameter, EditorRequired] public Entry Entry { get; set; } = default!;
+
+    [Parameter] public bool IsNew { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private Activity? SelectedActivity => Guid.TryParse(_activityId, out var id) ? Tracker.GetActivity(id) : null;
+
+    private string IconValue
+    {
+        get => _icon ?? "";
+        set => _icon = string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private string ColorValue
+    {
+        get => _color ?? "#888888";
+        set => _color = value;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_entryId == Entry.Id && _activityId != "")
+        {
+            return;
+        }
+
+        _entryId = Entry.Id;
+        _activityId = (Entry.ActivityId == Guid.Empty ? Tracker.ActiveActivities.FirstOrDefault()?.Id ?? Guid.Empty : Entry.ActivityId).ToString();
+        _date = DateOnly.FromDateTime(Entry.Timestamp);
+        _time = new TimeOnly(Entry.Timestamp.Hour, Entry.Timestamp.Minute);
+        _value = Entry.Value;
+        _optionId = Entry.OptionId;
+        _note = Entry.Note;
+        _icon = Entry.Icon;
+        _color = Entry.Color;
+    }
+
+    private string DefaultIcon(Activity a) => a.FindOption(_optionId)?.Icon ?? a.Icon;
+
+    private string DefaultColor(Activity a) => a.FindOption(_optionId)?.Color ?? a.Color;
+
+    private void OnActivityChanged(ChangeEventArgs e)
+    {
+        _activityId = e.Value?.ToString() ?? "";
+        var a = SelectedActivity;
+        _optionId = a?.Kind == ActivityKind.Scale ? a.Options.FirstOrDefault()?.Id : null;
+        _value = a?.Kind == ActivityKind.Quantity ? a.DefaultValue ?? Tracker.LastValue(a.Id) ?? 1 : null;
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        if (SelectedActivity is not { } activity)
+        {
+            _error = "Choose an activity.";
+            return;
+        }
+
+        if (activity.Kind == ActivityKind.Scale && activity.FindOption(_optionId) is null)
+        {
+            _error = "Pick a choice.";
+            return;
+        }
+
+        if (activity.Kind == ActivityKind.Quantity && _value is null or < 0)
+        {
+            _error = "Enter a value of 0 or more.";
+            return;
+        }
+
+        var entry = new Entry
+        {
+            Id = Entry.Id,
+            ActivityId = activity.Id,
+            Timestamp = _date.ToDateTime(_time),
+            Value = activity.Kind == ActivityKind.Quantity ? _value : null,
+            OptionId = activity.Kind == ActivityKind.Scale ? _optionId : null,
+            Note = string.IsNullOrWhiteSpace(_note) ? null : _note.Trim(),
+            Icon = _icon,
+            Color = _color,
+        };
+        await Tracker.SaveEntryAsync(entry);
+        await CloseAsync();
+    }
+
+    private async Task DeleteAsync()
+    {
+        await Tracker.DeleteEntryAsync(Entry.Id);
+        await CloseAsync();
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+}

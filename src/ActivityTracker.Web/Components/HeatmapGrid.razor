@@ -1,0 +1,119 @@
+@inject IJSRuntime JS
+
+<div class="heatmap" data-testid="heatmap">
+    <div class="heatmap-scroll" @ref="_scroll">
+        <div class="heatmap-inner">
+            <div class="heatmap-months" aria-hidden="true">
+                @for (var i = 0; i < Map.Weeks.Count; i++)
+                {
+                    <span>@MonthLabel(i)</span>
+                }
+            </div>
+            <div class="heatmap-body">
+                <div class="heatmap-weekdays" aria-hidden="true">
+                    @foreach (var (day, index) in ScheduleCalculator.OrderedWeek(FirstDayOfWeek).Select((d, i) => (d, i)))
+                    {
+                        <span>@(index % 2 == 0 ? day.ToString()[..3] : "")</span>
+                    }
+                </div>
+                <div class="heatmap-cells" role="grid" aria-label="@Label">
+                    @foreach (var week in Map.Weeks)
+                    {
+                        foreach (var cell in week)
+                        {
+                            if (!cell.InRange)
+                            {
+                                <span class="hm-cell out"></span>
+                                continue;
+                            }
+
+                            <button type="button" class="hm-cell l@(cell.Level) @(cell.Date == Today ? "today" : "")"
+                                    style="--c:@(cell.Color ?? DefaultColor)" title="@Tooltip(cell)" aria-label="@Tooltip(cell)"
+                                    data-level="@cell.Level" @onclick="() => OnDayClick.InvokeAsync(cell.Date)"></button>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="heatmap-legend muted" aria-hidden="true">
+        @if (Options is { Count: > 0 })
+        {
+            @foreach (var o in Options.OrderBy(o => o.Score))
+            {
+                <span class="legend-option"><span class="hm-cell l4" style="--c:@o.Color"></span>@o.Icon</span>
+            }
+        }
+        else
+        {
+            <text>Less</text>
+            @for (var l = 0; l <= HeatmapBuilder.MaxLevel; l++)
+            {
+                <span class="hm-cell l@(l)" style="--c:@DefaultColor"></span>
+            }
+            <text>More</text>
+        }
+    </div>
+</div>
+
+@code {
+    private ElementReference _scroll;
+
+    [Parameter, EditorRequired] public Heatmap Map { get; set; } = default!;
+
+    [Parameter] public string DefaultColor { get; set; } = "var(--accent)";
+
+    [Parameter] public DayOfWeek FirstDayOfWeek { get; set; } = DayOfWeek.Monday;
+
+    [Parameter] public DateOnly Today { get; set; }
+
+    [Parameter] public string Label { get; set; } = "Activity heatmap";
+
+    /// <summary>Formats the value shown in the tooltip (e.g. "45 min").</summary>
+    [Parameter] public Func<HeatmapCell, string>? ValueFormatter { get; set; }
+
+    [Parameter] public EventCallback<DateOnly> OnDayClick { get; set; }
+
+    /// <summary>For Scale activities: shows each option's color in the legend instead of an intensity scale.</summary>
+    [Parameter] public IReadOnlyList<ActivityOption>? Options { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("tracker.scrollToEnd", _scroll);
+            }
+            catch (JSException)
+            {
+                // Cosmetic only.
+            }
+        }
+    }
+
+    private string MonthLabel(int weekIndex)
+    {
+        var week = Map.Weeks[weekIndex];
+        var firstOfMonth = week.FirstOrDefault(c => c.InRange && c.Date.Day == 1);
+        if (firstOfMonth is not null)
+        {
+            return firstOfMonth.Date.ToString("MMM");
+        }
+
+        return weekIndex == 0 && week.Any(c => c.InRange && c.Date.Day <= 7) ? week.First(c => c.InRange).Date.ToString("MMM") : "";
+    }
+
+    private string Tooltip(HeatmapCell cell)
+    {
+        var text = cell.Date.ToString("ddd d MMM yyyy");
+        if (cell.EntryCount == 0)
+        {
+            return $"{text}: nothing";
+        }
+
+        var detail = ValueFormatter?.Invoke(cell);
+        var entries = cell.EntryCount == 1 ? "1 entry" : $"{cell.EntryCount} entries";
+        return string.IsNullOrEmpty(detail) ? $"{text}: {entries}" : $"{text}: {entries} ({detail})";
+    }
+}
