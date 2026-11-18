@@ -1,0 +1,29 @@
+@* A <input type="time"> bound to a TimeOnly?.
+   Parses the "HH:mm" value itself: the built-in @bind conversion for TimeOnly did not accept the browser's
+   value in the published app, so the field snapped back to its previous time (#9). *@
+<input class="input" type="time" value="@Format(Value)" @onchange="OnChangeAsync" @attributes="AdditionalAttributes" />
+
+@code {
+    private static readonly string[] Formats = ["HH:mm", "HH:mm:ss", "HH:mm:ss.fff"];
+
+    [Parameter] public TimeOnly? Value { get; set; }
+
+    [Parameter] public EventCallback<TimeOnly?> ValueChanged { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    public static string Format(TimeOnly? time) => time?.ToString("HH:mm", CultureInfo.InvariantCulture) ?? "";
+
+    public static TimeOnly? Parse(string? text) =>
+        TimeOnly.TryParseExact(text, Formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var time) ? time : null;
+
+    private async Task OnChangeAsync(ChangeEventArgs e)
+    {
+        // An empty or invalid value (e.g. a half-typed time) keeps the current one.
+        if (Parse(e.Value?.ToString()) is { } time && time != Value)
+        {
+            Value = time;
+            await ValueChanged.InvokeAsync(time);
+        }
+    }
+}

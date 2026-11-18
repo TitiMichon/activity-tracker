@@ -24,7 +24,7 @@
         </label>
         <label class="field">
             <span>Time</span>
-            <input class="input" type="time" @bind="_time" @bind:format="HH:mm" />
+            <TimeInput Value="_time" ValueChanged="@(t => _time = t ?? _time)" aria-label="Time" />
         </label>
     </div>
 
