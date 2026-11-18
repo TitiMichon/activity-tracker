@@ -126,6 +126,8 @@ ipch/
 
 # Visual Studio Trace Files
 *.e2e
+# ...but not our end-to-end test project (matched case-insensitively on Windows).
+!/tests/ActivityTracker.E2E/
 
 # TFS 2012 Local Workspace
 $tf/
