@@ -118,6 +118,22 @@ public class UserJourneyTests(AppFixture app)
     }
 
     [E2EFact]
+    public async Task Editing_an_entry_time_keeps_the_typed_time()
+    {
+        // Regression for #9: in the browser, time fields snapped back to their previous value.
+        var page = await app.NewPageAsync("activities");
+        await page.GetByTestId("template-sport").ClickAsync();
+        await page.GetByRole(AriaRole.Link, new() { Name = "Today" }).ClickAsync();
+        await page.GetByRole(AriaRole.Button, new() { Name = "Log Sport" }).ClickAsync();
+
+        await page.GetByRole(AriaRole.Button, new() { Name = "Edit Sport entry" }).ClickAsync();
+        await page.GetByTestId("entry-editor").GetByLabel("Time").FillAsync("00:05");
+        await page.GetByTestId("entry-save").ClickAsync();
+
+        await Expect(page.GetByTestId("entry-list")).ToContainTextAsync("00:05");
+    }
+
+    [E2EFact]
     public async Task Deep_link_to_week_view_works()
     {
         var page = await app.NewPageAsync("calendar?view=week&date=2026-01-07");
