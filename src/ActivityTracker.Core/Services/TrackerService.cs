@@ -201,6 +201,14 @@ public sealed class TrackerService(ITrackerStore store, TimeProvider time)
     public IReadOnlyList<Activity> DueOn(DateOnly date) =>
         ActiveActivities.Where(a => ScheduleCalculator.IsDue(a, date)).ToList();
 
+    /// <summary>Activities shown on the calendar: all but the ones marked "hide from calendar".</summary>
+    public IReadOnlyList<Activity> CalendarActivities => Activities.Where(a => !a.HideFromCalendar).ToList();
+
+    public DayProgress ProgressOn(Activity activity, DateOnly date) => DayProgress.Of(activity, EntriesOn(date, activity.Id), date);
+
+    /// <summary>Activities whose reminder time has passed today and that are still not done.</summary>
+    public IReadOnlyList<Activity> PendingReminders() => ReminderCalculator.Pending(Activities, _data.Entries, Now);
+
     // ---------- Settings & data ----------
 
     public async Task SetFirstDayOfWeekAsync(DayOfWeek day)

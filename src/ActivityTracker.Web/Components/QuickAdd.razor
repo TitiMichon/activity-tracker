@@ -14,12 +14,12 @@
         <div class="qa-grid">
             @foreach (var a in Tracker.QuickAddActivities())
             {
-                var count = Tracker.EntriesOn(TargetDate, a.Id).Count();
-                <button type="button" class="qa-tile @(_selected?.Id == a.Id ? "selected" : "") @(count > 0 ? "done" : "")"
+                var progress = Tracker.ProgressOn(a, TargetDate);
+                <button type="button" class="qa-tile @(_selected?.Id == a.Id ? "selected" : "") @(progress.IsDone ? "done" : progress.Count > 0 ? "partial" : "")"
                         style="--c:@a.Color" data-testid="qa-tile" aria-label="Log @a.Name" @onclick="() => OnTileClickAsync(a)">
                     <ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="lg" />
                     <span class="qa-name">@a.Name</span>
-                    <span class="qa-sub">@(count > 0 ? $"{count}× {DayWord}" : Hint(a))</span>
+                    <span class="qa-sub">@SubText(a, progress)</span>
                 </button>
             }
         </div>
@@ -88,6 +88,11 @@
     private string DayWord => TargetDate == Tracker.Today ? "today" : "this day";
 
     private DateTime? Timestamp => TargetDate == Tracker.Today ? null : TargetDate.ToDateTime(TimeOnly.FromDateTime(Tracker.Now));
+
+    private string SubText(Activity a, DayProgress progress) =>
+        progress.Required > 1 ? $"{progress.Count} / {progress.Required} {DayWord}"
+        : progress.Count > 0 ? $"{progress.Count}× {DayWord}"
+        : Hint(a);
 
     private static string Hint(Activity a) => a.Kind switch
     {

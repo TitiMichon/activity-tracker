@@ -3,7 +3,10 @@ using ActivityTracker.Core.Models;
 namespace ActivityTracker.Core.Services;
 
 /// <param name="Level">0 (nothing) to 4 (max intensity).</param>
-/// <param name="Color">Cell color; for Scale activities it is the color of the closest option.</param>
+/// <param name="Color">
+/// Cell color: the color of the day's last entry (its custom color, else its option's color, else the activity's).
+/// Null for the "all activities" heatmap.
+/// </param>
 /// <param name="InRange">False for padding cells outside the requested range.</param>
 public sealed record HeatmapCell(DateOnly Date, double Value, int Level, string? Color, bool InRange, int EntryCount);
 
@@ -42,9 +45,8 @@ public static class HeatmapBuilder
                 var inRange = date >= from && date <= to;
                 var dayEntries = byDay.GetValueOrDefault(date);
                 var value = values.GetValueOrDefault(date);
-                var (level, color) = activity?.Kind == ActivityKind.Scale && dayEntries is not null
-                    ? (MaxLevel, ClosestOption(activity, value)?.Color ?? activity.Color)
-                    : (Level(value, max), activity?.Color);
+                var color = activity is null ? null : DayColor(activity, dayEntries);
+                var level = activity?.Kind == ActivityKind.Scale && dayEntries is not null ? MaxLevel : Level(value, max);
                 return new HeatmapCell(date, value, inRange ? level : 0, color, inRange, inRange ? dayEntries?.Count ?? 0 : 0);
             }).ToArray());
         }
@@ -80,6 +82,12 @@ public static class HeatmapBuilder
 
         return Math.Clamp((int)Math.Ceiling(value / max * MaxLevel), 1, MaxLevel);
     }
+
+    /// <summary>Color chosen on a day: the one of the latest entry, so a custom per-entry color wins.</summary>
+    public static string DayColor(Activity activity, IReadOnlyCollection<Entry>? dayEntries) =>
+        dayEntries is { Count: > 0 }
+            ? EntryAppearance.Color(activity, dayEntries.MaxBy(e => e.Timestamp)!)
+            : activity.Color;
 
     public static ActivityOption? ClosestOption(Activity activity, double score) =>
         activity.Options.OrderBy(o => Math.Abs(o.Score - score)).FirstOrDefault();

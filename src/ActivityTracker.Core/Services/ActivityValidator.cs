@@ -44,6 +44,11 @@ public static class ActivityValidator
             errors.Add("Day of month must be between 1 and 31.");
         }
 
+        if (activity.Schedule.TimesPerDay is < 1 or > 100)
+        {
+            errors.Add("Times per day must be between 1 and 100.");
+        }
+
         if (activity.Goal is { Target: <= 0 })
         {
             errors.Add("Objective target must be greater than 0.");

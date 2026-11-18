@@ -13,5 +13,6 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ITrackerStore, LocalStorageTrackerStore>();
 builder.Services.AddSingleton<TrackerService>();
 builder.Services.AddSingleton<ToastService>();
+builder.Services.AddSingleton<ReminderService>();
 
 await builder.Build().RunAsync();

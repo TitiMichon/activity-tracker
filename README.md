@@ -8,12 +8,13 @@ It is a Blazor WebAssembly progressive web app: it runs entirely in the browser,
 | | |
 |---|---|
 | **Activities** | Name, emoji logo, color. Three kinds: *Check* (done/not done), *Quantity* (value + unit, e.g. 30 min), *Scale* (options with their own icon/color/score, e.g. 😫 → 😄 mood). |
-| **Periodicity** | Anytime, every day, chosen weekdays, every N days, monthly. Start date and optional deadline. |
+| **Periodicity** | Anytime, every day, chosen weekdays, every N days, monthly. Start date and optional deadline. Times per day (e.g. water 8×) with "3 / 8" progress. |
+| **Reminders** | A time per planned activity: if not done by then, a notification (while the app is open, in a tab or installed). |
 | **Objectives** | "3× per week", "150 min per week", "500 pages until the deadline"… with progress bars. |
 | **Quick add** | Today page: one tap logs a Check activity, Quantity/Scale open a mini picker. Undo in the toast. |
 | **Custom look per entry** | Any entry can override its icon and color (e.g. a special 🎉 day). |
-| **Calendar** | Day / week / month views, filter by activity, planned-but-missed markers. |
-| **Heatmap** | Last 12 months or a given year, for all activities, one activity, or one per activity. Mood days take the color of the mood. Streaks and totals. |
+| **Calendar** | Day / week / month views, filter by activity, planned-but-missed markers. Activities can be hidden from the calendar. |
+| **Heatmap** | Last 12 months or a given year, for all activities, one activity, or one per activity. Each day takes the color chosen that day (mood option, or the entry's custom color). Streaks and totals. |
 | **Data** | Stored in the browser (localStorage). JSON export/import for backups and moving between devices. |
 
 ## Getting started

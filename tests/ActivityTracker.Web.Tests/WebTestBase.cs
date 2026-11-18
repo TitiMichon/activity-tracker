@@ -27,6 +27,8 @@ public abstract class WebTestBase : BunitContext
         Services.AddSingleton<ITrackerStore>(Store);
         Services.AddSingleton(Tracker);
         Services.AddSingleton<ToastService>();
+        Services.AddSingleton<TimeProvider>(Time);
+        Services.AddSingleton<ReminderService>();
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
 

@@ -19,11 +19,12 @@
         <ul class="planned-list">
             @foreach (var a in Planned)
             {
-                var done = Tracker.EntriesOn(Tracker.Today, a.Id).Any();
+                var progress = Tracker.ProgressOn(a, Tracker.Today);
+                var done = progress.IsDone;
                 <li class="@(done ? "done" : "")">
                     <ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="sm" Faded="@(!done)" />
                     <span>@a.Name</span>
-                    <span class="muted">@(done ? "Done ✓" : "To do")</span>
+                    <span class="muted">@progress.Text</span>
                 </li>
             }
         </ul>

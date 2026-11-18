@@ -3,7 +3,8 @@ using ActivityTracker.Core.Models;
 namespace ActivityTracker.Core.Services;
 
 /// <summary>
-/// Streaks count consecutive "expected" days that have at least one entry.
+/// Streaks count consecutive "expected" days that are done
+/// (at least <see cref="Schedule.TimesPerDay"/> entries).
 /// For unscheduled activities every day is expected; otherwise only due days count
 /// and non-due days neither extend nor break the streak.
 /// </summary>
@@ -77,5 +78,9 @@ public static class StreakCalculator
         activity.Schedule.Frequency == Frequency.None || ScheduleCalculator.IsDue(activity, date);
 
     private static HashSet<DateOnly> ActiveDays(Activity activity, IEnumerable<Entry> entries) =>
-        entries.Where(e => e.ActivityId == activity.Id).Select(e => e.Date).ToHashSet();
+        entries.Where(e => e.ActivityId == activity.Id)
+            .GroupBy(e => e.Date)
+            .Where(g => g.Count() >= DayProgress.RequiredFor(activity))
+            .Select(g => g.Key)
+            .ToHashSet();
 }

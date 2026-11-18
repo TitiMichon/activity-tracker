@@ -2,6 +2,7 @@
 @inherits TrackerComponentBase
 @inject IJSRuntime JS
 @inject ToastService Toasts
+@inject ReminderService Reminders
 
 <PageTitle>Settings · Activity Tracker</PageTitle>
 
@@ -20,6 +21,44 @@
             }
         </select>
     </label>
+</section>
+
+<section class="card">
+    <h2>Reminders</h2>
+    <p class="muted">
+        Set a reminder time on a planned activity (Activities → edit → Periodicity). If it is not done by then,
+        you get a notification. Reminders work while the app is open, in a tab or installed on your device.
+    </p>
+    @if (ReminderActivities.Count > 0)
+    {
+        <ul class="planned-list" data-testid="reminder-list">
+            @foreach (var a in ReminderActivities)
+            {
+                <li>
+                    <ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="sm" />
+                    <a href="activities/@a.Id">@a.Name</a>
+                    <span class="muted">@a.ReminderTime!.Value.ToString("HH:mm")</span>
+                </li>
+            }
+        </ul>
+    }
+    <p data-testid="notification-status">
+        @switch (_permission)
+        {
+            case "granted":
+                <text>✅ Notifications are allowed.</text>
+                break;
+            case "denied":
+                <text>🚫 Notifications are blocked. Allow them in your browser's site settings; until then reminders only show inside the app.</text>
+                break;
+            case "unsupported":
+                <text>This browser does not support notifications; reminders only show inside the app.</text>
+                break;
+            default:
+                <button type="button" class="btn primary" data-testid="enable-notifications" @onclick="EnableNotificationsAsync">Allow notifications</button>
+                break;
+        }
+    </p>
 </section>
 
 <section class="card">
@@ -52,6 +91,18 @@
 @code {
     private const long MaxImportBytes = 20 * 1024 * 1024;
     private string? _importError;
+    private string? _permission;
+
+    private List<Activity> ReminderActivities =>
+        Tracker.ActiveActivities.Where(a => a.ReminderTime is not null).OrderBy(a => a.ReminderTime).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _permission = await Reminders.PermissionAsync();
+    }
+
+    private async Task EnableNotificationsAsync() => _permission = await Reminders.RequestPermissionAsync();
 
     private Task OnFirstDayChanged(ChangeEventArgs e) =>
         Enum.TryParse<DayOfWeek>(e.Value?.ToString(), out var day) ? Tracker.SetFirstDayOfWeekAsync(day) : Task.CompletedTask;

@@ -29,4 +29,7 @@ public sealed class Schedule
 
     /// <summary>Day used by <see cref="Frequency.Monthly"/> (clamped to the month length).</summary>
     public int DayOfMonth { get; set; } = 1;
+
+    /// <summary>How many entries make a planned day "done" (e.g. 8 glasses of water). At least 1.</summary>
+    public int TimesPerDay { get; set; } = 1;
 }

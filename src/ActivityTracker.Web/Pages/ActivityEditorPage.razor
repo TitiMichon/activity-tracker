@@ -2,6 +2,7 @@
 @page "/activities/{Id:guid}"
 @inherits TrackerComponentBase
 @inject NavigationManager Nav
+@inject ReminderService Reminders
 @using ActivityTracker.Core.Persistence
 
 <PageTitle>@(IsNew ? "New activity" : _model?.Name) · Activity Tracker</PageTitle>
@@ -39,6 +40,10 @@
             <span>Color</span>
             <ColorPicker @bind-Value="_model.Color" />
         </div>
+        <label class="check">
+            <input type="checkbox" checked="@(!_model.HideFromCalendar)" @onchange="@(e => _model.HideFromCalendar = !(bool)(e.Value ?? true))" data-testid="activity-show-calendar" />
+            Show on the calendar
+        </label>
     </section>
 
     <section class="card">
@@ -119,6 +124,28 @@
                     <input class="input" type="number" min="1" max="31" @bind="_model.Schedule.DayOfMonth" />
                 </label>
                 break;
+        }
+        @if (_model.Schedule.Frequency != Frequency.None)
+        {
+            <div class="field-row">
+                <label class="field">
+                    <span>Times per day <small>(e.g. 8 glasses of water)</small></span>
+                    <input class="input" type="number" min="1" max="100" @bind="_model.Schedule.TimesPerDay" data-testid="activity-times-per-day" />
+                </label>
+                <div class="field">
+                    <span>Reminder <small>(if not done by then)</small></span>
+                    <div class="reminder-row">
+                        <label class="check">
+                            <input type="checkbox" checked="@(_model.ReminderTime is not null)" @onchange="ToggleReminder" data-testid="activity-has-reminder" />
+                            Remind me at
+                        </label>
+                        @if (_model.ReminderTime is not null)
+                        {
+                            <input class="input" type="time" @bind="_model.ReminderTime" @bind:format="HH:mm" data-testid="activity-reminder-time" />
+                        }
+                    </div>
+                </div>
+            </div>
         }
         <div class="field-row">
             <label class="field">
@@ -241,6 +268,9 @@
 
     private void UseMoodPreset() => _model!.Options = ActivityTemplates.Create("mood", Tracker.Today).Options;
 
+    private void ToggleReminder(ChangeEventArgs e) =>
+        _model!.ReminderTime = (bool)(e.Value ?? false) ? new TimeOnly(20, 0) : null;
+
     private void ToggleDay(DayOfWeek day)
     {
         var days = _model!.Schedule.DaysOfWeek;
@@ -264,6 +294,13 @@
             model.Options = [];
         }
 
+        if (model.Schedule.Frequency == Frequency.None)
+        {
+            // Without a plan there is nothing to be "not done": no target per day, no reminder.
+            model.Schedule.TimesPerDay = 1;
+            model.ReminderTime = null;
+        }
+
         if (model.Kind != ActivityKind.Quantity)
         {
             model.Unit = null;
@@ -277,6 +314,12 @@
         }
 
         await Tracker.SaveActivityAsync(model);
+        if (model.ReminderTime is not null)
+        {
+            // Asked here because browsers only allow the permission prompt right after a click.
+            await Reminders.RequestPermissionAsync();
+        }
+
         Nav.NavigateTo("activities");
     }
 

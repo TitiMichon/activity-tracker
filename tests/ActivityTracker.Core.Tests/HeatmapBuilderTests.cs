@@ -64,16 +64,41 @@ public class HeatmapBuilderTests
     }
 
     [Fact]
-    public void Scale_activity_uses_closest_option_color()
+    public void Scale_day_takes_the_color_of_the_option_chosen_last()
     {
         var mood = Mood();
-        var map = HeatmapBuilder.Build(mood, [On(mood, Monday, optionId: "great"), On(mood, Monday, optionId: "ok")], Monday, Monday.AddDays(1), DayOfWeek.Monday);
+        var map = HeatmapBuilder.Build(mood, [On(mood, Monday, optionId: "bad", hour: 18), On(mood, Monday, optionId: "great", hour: 9)], Monday, Monday.AddDays(1), DayOfWeek.Monday);
 
         var cells = map.Cells.ToList();
-        Assert.Equal(4, cells[0].Value);       // average of 5 and 3
-        Assert.Equal("#ffff00", cells[0].Color); // tie between Ok(3) and Great(5) → first option wins
+        Assert.Equal(3, cells[0].Value);         // average score is still used for stats and the tooltip
+        Assert.Equal("#ff0000", cells[0].Color); // but the color is the one picked last (Bad at 18:00)
         Assert.Equal(4, cells[0].Level);
         Assert.Equal(0, cells[1].Level);
+    }
+
+    [Fact]
+    public void Custom_entry_color_wins_over_option_color()
+    {
+        var mood = Mood();
+        var entry = On(mood, Monday, optionId: "great");
+        entry.Color = "#123456";
+
+        var map = HeatmapBuilder.Build(mood, [entry], Monday, Monday, DayOfWeek.Monday);
+
+        Assert.Equal("#123456", map.Cells.Single().Color);
+    }
+
+    [Fact]
+    public void Quantity_day_uses_custom_entry_color_and_activity_color_otherwise()
+    {
+        var guitar = Quantity();
+        guitar.Color = "#0000ff";
+        var custom = On(guitar, Monday, 30);
+        custom.Color = "#ff00ff";
+
+        var map = HeatmapBuilder.Build(guitar, [custom, On(guitar, Monday.AddDays(1), 10)], Monday, Monday.AddDays(1), DayOfWeek.Monday);
+
+        Assert.Equal(["#ff00ff", "#0000ff"], map.Cells.Select(c => c.Color));
     }
 
     [Fact]

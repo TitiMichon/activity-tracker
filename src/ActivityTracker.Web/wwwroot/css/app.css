@@ -424,3 +424,10 @@ textarea.input { resize: vertical; }
 }
 .loading-progress-text { position: absolute; text-align: center; font-weight: bold; inset: calc(20vh + 3.25rem) 0 auto 0.2rem; }
 .loading-progress-text:after { content: var(--blazor-load-percentage-text, "Loading"); }
+
+/* ---------- Repeated check-ins & reminders ---------- */
+.badge-wrap { position: relative; display: inline-flex; }
+.badge-count { position: absolute; right: -5px; bottom: -4px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; background: var(--text); color: var(--bg); font-size: .6rem; font-weight: 700; line-height: 14px; text-align: center; }
+.qa-tile.partial { border-color: color-mix(in srgb, var(--c) 45%, var(--border)); }
+.reminder-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; min-height: 2.5rem; }
+.reminder-row .input { width: auto; }

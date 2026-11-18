@@ -24,7 +24,7 @@
             <option value="">All activities</option>
             @foreach (var a in Tracker.Activities)
             {
-                <option value="@a.Id">@a.Icon @a.Name</option>
+                <option value="@a.Id">@a.Icon @a.Name@(a.HideFromCalendar ? " (hidden)" : "")</option>
             }
         </select>
     </div>
@@ -44,13 +44,19 @@
                 {
                     var items = DayItems(day);
                     <button type="button" class="month-day @(day.Month != Current.Month ? "other" : "") @(day == Tracker.Today ? "today" : "")"
-                            aria-label="@day.ToString("dddd d MMMM"): @items.Count(i => !i.Planned) entries" data-date="@day.ToString("yyyy-MM-dd")"
+                            aria-label="@day.ToString("dddd d MMMM"): @items.Where(i => !i.Planned).Sum(i => i.Count) entries" data-date="@day.ToString("yyyy-MM-dd")"
                             @onclick="@(() => Go("day", day))">
                         <span class="month-num">@day.Day</span>
                         <span class="month-icons">
                             @foreach (var item in items.Take(MaxIcons))
                             {
-                                <ActivityBadge Icon="@item.Icon" Color="@item.Color" Size="sm" Faded="@item.Planned" />
+                                <span class="badge-wrap">
+                                    <ActivityBadge Icon="@item.Icon" Color="@item.Color" Size="sm" Faded="@item.Planned" />
+                                    @if (item.Count > 1)
+                                    {
+                                        <span class="badge-count" data-testid="badge-count">@item.Count</span>
+                                    }
+                                </span>
                             }
                             @if (items.Count > MaxIcons)
                             {
@@ -67,7 +73,7 @@
         <div class="week" data-testid="week-view">
             @foreach (var day in CalendarMath.WeekDays(Current, Tracker.FirstDayOfWeek))
             {
-                var entries = Tracker.EntriesOn(day, Filter).ToList();
+                var entries = VisibleEntries(day);
                 <div class="week-col card @(day == Tracker.Today ? "today" : "")">
                     <button type="button" class="week-head" @onclick="@(() => Go("day", day))">
                         <span class="muted">@day.ToString("ddd")</span> <strong>@day.Day</strong>
@@ -86,8 +92,9 @@
                     }
                     @foreach (var a in Missing(day, entries))
                     {
+                        var progress = DayProgress.Of(a, entries, day);
                         <div class="week-item planned" style="--c:@a.Color" title="Planned">
-                            <span>@a.Icon</span><span class="week-item-text">@a.Name <small>planned</small></span>
+                            <span>@a.Icon</span><span class="week-item-text">@a.Name <small>@(progress.Count > 0 ? progress.Text : "planned")</small></span>
                         </div>
                     }
                 </div>
@@ -96,7 +103,7 @@
         break;
 
     default:
-        var dayEntries = Tracker.EntriesOn(Current, Filter).ToList();
+        var dayEntries = VisibleEntries(Current);
         <div class="day" data-testid="day-view">
             <QuickAdd Date="Current" />
             @if (Missing(Current, dayEntries).ToList() is { Count: > 0 } missing)
@@ -106,7 +113,8 @@
                     <ul class="planned-list">
                         @foreach (var a in missing)
                         {
-                            <li><ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="sm" Faded="true" /><span>@a.Name</span><span class="muted">Not done</span></li>
+                            var progress = DayProgress.Of(a, dayEntries, Current);
+                            <li><ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="sm" Faded="true" /><span>@a.Name</span><span class="muted">@(progress.Count > 0 ? progress.Text : "Not done")</span></li>
                         }
                     </ul>
                 </section>
@@ -163,27 +171,43 @@
         _ => Current.AddMonths(direction),
     };
 
-    private sealed record DayItem(string Icon, string Color, bool Planned);
+    private sealed record DayItem(string Icon, string Color, bool Planned, int Count = 1);
 
+    /// <summary>
+    /// Entries shown on the calendar for a day. Activities marked "hide from calendar" are left out,
+    /// unless the filter explicitly selects one of them.
+    /// </summary>
+    private List<Entry> VisibleEntries(DateOnly day) =>
+        Tracker.EntriesOn(day, Filter).Where(e => Filter is not null || IsShown(e.ActivityId)).ToList();
+
+    private bool IsShown(Guid activityId) => Tracker.GetActivity(activityId) is { HideFromCalendar: false };
+
+    /// <summary>One badge per activity and look: repeated check-ins (e.g. water) show a count.</summary>
     private List<DayItem> DayItems(DateOnly day)
     {
-        var entries = Tracker.EntriesOn(day, Filter).ToList();
+        var entries = VisibleEntries(day);
         var items = new List<DayItem>();
-        foreach (var e in entries)
+        foreach (var group in entries.GroupBy(e => e.ActivityId))
         {
-            if (Tracker.GetActivity(e.ActivityId) is { } a)
+            if (Tracker.GetActivity(group.Key) is not { } a)
             {
-                items.Add(new DayItem(EntryAppearance.Icon(a, e), EntryAppearance.Color(a, e), false));
+                continue;
             }
+
+            items.AddRange(group
+                .GroupBy(e => (Icon: EntryAppearance.Icon(a, e), Color: EntryAppearance.Color(a, e)))
+                .Select(g => new DayItem(g.Key.Icon, g.Key.Color, false, g.Count())));
         }
 
-        items.AddRange(Missing(day, entries).Select(a => new DayItem(a.Icon, a.Color, true)));
+        items.AddRange(Missing(day, entries)
+            .Where(a => entries.All(e => e.ActivityId != a.Id))
+            .Select(a => new DayItem(a.Icon, a.Color, true)));
         return items;
     }
 
-    /// <summary>Activities planned on a day that have no entry yet.</summary>
+    /// <summary>Activities planned on a day that are not done yet (fewer entries than "times per day").</summary>
     private IEnumerable<Activity> Missing(DateOnly day, IReadOnlyCollection<Entry> entries) =>
-        Tracker.DueOn(day).Where(a => (Filter is null || a.Id == Filter) && entries.All(e => e.ActivityId != a.Id));
+        Tracker.DueOn(day).Where(a => (Filter is null ? !a.HideFromCalendar : a.Id == Filter) && !DayProgress.Of(a, entries, day).IsDone);
 
     private void Go(string view, DateOnly date) =>
         Nav.NavigateTo(Nav.GetUriWithQueryParameters(new Dictionary<string, object?>

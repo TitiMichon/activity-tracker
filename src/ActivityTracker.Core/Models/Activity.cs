@@ -53,6 +53,15 @@ public sealed class Activity
 
     public bool Archived { get; set; }
 
+    /// <summary>Keeps the activity (entries and planned markers) off the calendar views.</summary>
+    public bool HideFromCalendar { get; set; }
+
+    /// <summary>
+    /// Time of day at which to remind about the activity on days it is planned and not yet done.
+    /// Null means no reminder.
+    /// </summary>
+    public TimeOnly? ReminderTime { get; set; }
+
     public int SortOrder { get; set; }
 
     public ActivityOption? FindOption(string? optionId) =>

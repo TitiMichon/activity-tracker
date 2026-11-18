@@ -53,3 +53,12 @@ async function onFetch(event) {
 
     return cachedResponse || fetch(event.request);
 }
+
+// Clicking a reminder brings the app to the front (or opens it).
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+        const client = clients.find(c => 'focus' in c);
+        return client ? client.focus() : self.clients.openWindow(self.registration.scope);
+    }));
+});

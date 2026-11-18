@@ -1,5 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @inject TrackerService Tracker
+@inject ReminderService Reminders
 
 <div class="app">
     <header class="topbar">
@@ -45,6 +46,7 @@
         try
         {
             await Tracker.EnsureLoadedAsync();
+            Reminders.Start();
         }
         catch (FormatException ex)
         {

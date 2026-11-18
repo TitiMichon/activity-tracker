@@ -5,6 +5,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+
+- **Times per day** for planned activities (e.g. water 8× a day): each tap counts, tiles and the planned list show "3 / 8", the day is done (and the streak continues) only once the target is reached. The month view groups repeated entries into one badge with a count.
+- **Hide from calendar** option per activity. Hidden activities still appear on Today, in the heatmap and when explicitly selected in the calendar filter.
+- **Reminders**: a time per planned activity; if it is not done by then, a notification (when allowed) and an in-app message, once per day. Works while the app is open. Settings lists the reminders and asks for notification permission.
+
+### Changed
+
+- Heatmap days take the color of the last entry of the day, including its custom color, instead of the option closest to the day's average score.
+
 ## [1.0.0] - 2026-11-16
 
 ### Added
