@@ -2,10 +2,13 @@
 
 ## Workflow
 
-1. Branch from `main`: `feat/<topic>`, `fix/<topic>` or `chore/<topic>`.
-2. Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/): `feat: add weekly summary`, `fix: streak breaks on DST change`.
-3. Add a line under `## [Unreleased]` in `CHANGELOG.md` (CI checks this when `src/` changes; label the PR `skip-changelog` to bypass).
-4. Run `./scripts/validate.ps1` before opening the PR. CI runs the same script.
+1. Every change starts from a GitHub issue (create one if needed).
+2. Branch from `main`, one branch per issue: `<issue-number>_<name-of-feature>`, e.g. `6_reminder-time-reset`.
+3. Split commits by concern (code, tests, docs). Message format: `<type>: <message> (#<issue-number>)`,
+   with type one of `feat`, `fix`, `refacto`, `test`, `docs`, `ci`, `chore`, `perf`, `style`,
+   e.g. `fix: keep the typed reminder time (#6)`.
+4. Add a line under `## [Unreleased]` in `CHANGELOG.md` (CI checks this when `src/` changes; label the PR `skip-changelog` to bypass).
+5. Run `./scripts/validate.ps1`, then open a pull request with `Closes #<issue-number>`. CI runs the same script.
 
 ## Where tests go
 
