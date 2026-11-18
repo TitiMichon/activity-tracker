@@ -15,6 +15,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 - Heatmap days take the color of the last entry of the day, including its custom color, instead of the option closest to the day's average score.
 
+### Fixed
+
+- Time fields (reminder time, entry time) no longer snap back to their previous value in the browser (#9).
+
 ## [1.0.0] - 2026-11-16
 
 ### Added

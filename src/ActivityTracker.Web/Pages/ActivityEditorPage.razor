@@ -141,7 +141,7 @@
                         </label>
                         @if (_model.ReminderTime is not null)
                         {
-                            <input class="input" type="time" @bind="_model.ReminderTime" @bind:format="HH:mm" data-testid="activity-reminder-time" />
+                            <TimeInput @bind-Value="_model.ReminderTime" data-testid="activity-reminder-time" aria-label="Reminder time" />
                         }
                     </div>
                 </div>
