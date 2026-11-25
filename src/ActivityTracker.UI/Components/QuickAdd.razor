@@ -12,7 +12,7 @@
     else
     {
         <div class="qa-grid">
-            @foreach (var a in Tracker.QuickAddActivities())
+            @foreach (var a in Activities ?? Tracker.QuickAddActivities())
             {
                 var progress = Tracker.ProgressOn(a, TargetDate);
                 <button type="button" class="qa-tile @(_selected?.Id == a.Id ? "selected" : "") @(progress.IsDone ? "done" : progress.Count > 0 ? "partial" : "")"
@@ -83,6 +83,9 @@
     /// <summary>Day to log on. Defaults to today; past/future days keep the current time of day.</summary>
     [Parameter] public DateOnly? Date { get; set; }
 
+    /// <summary>Tiles to show, in this order. Defaults to every active activity, most recently used first.</summary>
+    [Parameter] public IReadOnlyList<Activity>? Activities { get; set; }
+
     private DateOnly TargetDate => Date ?? Tracker.Today;
 
     private string DayWord => TargetDate == Tracker.Today ? "today" : "this day";
@@ -92,6 +95,7 @@
     private string SubText(Activity a, DayProgress progress) =>
         progress.Required > 1 ? $"{progress.Count} / {progress.Required} {DayWord}"
         : progress.Count > 0 ? $"{progress.Count}× {DayWord}"
+        : a.ReminderTime is { } at && TargetDate == Tracker.Today && ScheduleCalculator.IsDue(a, TargetDate) ? $"⏰ {at:HH:mm}"
         : Hint(a);
 
     private static string Hint(Activity a) => a.Kind switch

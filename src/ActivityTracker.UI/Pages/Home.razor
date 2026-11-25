@@ -10,45 +10,70 @@
     </div>
 </div>
 
-<QuickAdd />
+<TodoListCard List="TodoList.Today" Items="Tracker.TodayTodos()" Title="To do today"
+              Placeholder="Add a to-do for today" EmptyText="Nothing planned yet. Add what you want to get done today." />
 
-@if (Planned.Count > 0)
-{
-    <section class="card">
-        <h2>Planned today</h2>
-        <ul class="planned-list">
-            @foreach (var a in Planned)
-            {
-                var progress = Tracker.ProgressOn(a, Tracker.Today);
-                var done = progress.IsDone;
-                <li class="@(done ? "done" : "")">
-                    <ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="sm" Faded="@(!done)" />
-                    <span>@a.Name</span>
-                    <span class="muted">@progress.Text</span>
-                </li>
-            }
-        </ul>
-    </section>
-}
-
-@if (WithGoals.Count > 0)
-{
-    <section class="card">
-        <h2>Objectives</h2>
-        @foreach (var a in WithGoals)
+<section class="card" data-testid="scheduled-today" aria-label="Scheduled today">
+    <div class="card-head">
+        <h2>Scheduled today</h2>
+        @if (Scheduled.Count > 0)
         {
-            <GoalProgressBar Activity="a" Progress="GoalCalculator.Progress(a, Tracker.Entries, Tracker.Today, Tracker.FirstDayOfWeek)" Today="Tracker.Today" />
+            <span class="muted" data-testid="scheduled-summary">@Scheduled.Count(a => Tracker.ProgressOn(a, Tracker.Today).IsDone) / @Scheduled.Count done</span>
         }
-    </section>
-}
-
-<section class="card">
-    <h2>Today's log</h2>
-    <EntryList Entries="Tracker.EntriesOn(Tracker.Today).Reverse().ToList()" EmptyText="Nothing logged today. Tap an activity above to add it." />
+    </div>
+    @if (Tracker.ActiveActivities.Count == 0)
+    {
+        <QuickAdd />
+    }
+    else if (Scheduled.Count == 0)
+    {
+        <p class="muted">No activity is planned today.</p>
+    }
+    else
+    {
+        <QuickAdd Activities="Scheduled" />
+    }
 </section>
 
+<TodoListCard List="TodoList.LongTerm" Items="Tracker.LongTermTodos()" Title="Long-term to-do"
+              Placeholder="Add a long-term to-do" EmptyText="Ideas and projects for later go here." />
+
+@if (Tracker.ActiveActivities.Count > 0)
+{
+    <details class="card more-today" data-testid="more-today">
+        <summary>
+            <span>More for today</span>
+            <small>other activities · today's log · objectives</small>
+        </summary>
+
+        @if (Others.Count > 0)
+        {
+            <h2>Log another activity</h2>
+            <QuickAdd Activities="Others" />
+        }
+
+        @if (WithGoals.Count > 0)
+        {
+            <h2>Objectives</h2>
+            @foreach (var a in WithGoals)
+            {
+                <GoalProgressBar Activity="a" Progress="GoalCalculator.Progress(a, Tracker.Entries, Tracker.Today, Tracker.FirstDayOfWeek)" Today="Tracker.Today" />
+            }
+        }
+
+        <h2>Today's log</h2>
+        <EntryList Entries="Tracker.EntriesOn(Tracker.Today).Reverse().ToList()" EmptyText="Nothing logged today." />
+    </details>
+}
+
 @code {
-    private IReadOnlyList<Activity> Planned => Tracker.DueOn(Tracker.Today);
+    /// <summary>Activities planned today, by reminder time (those without one last).</summary>
+    private IReadOnlyList<Activity> Scheduled => Tracker.DueOn(Tracker.Today)
+        .OrderBy(a => a.ReminderTime ?? TimeOnly.MaxValue)
+        .ThenBy(a => a.SortOrder)
+        .ToList();
+
+    private IReadOnlyList<Activity> Others => Tracker.QuickAddActivities().Where(a => !ScheduleCalculator.IsDue(a, Tracker.Today)).ToList();
 
     private IReadOnlyList<Activity> WithGoals => Tracker.ActiveActivities.Where(a => a.Goal is not null).ToList();
 }

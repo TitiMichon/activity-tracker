@@ -431,3 +431,34 @@ textarea.input { resize: vertical; }
 .qa-tile.partial { border-color: color-mix(in srgb, var(--c) 45%, var(--border)); }
 .reminder-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; min-height: 2.5rem; }
 .reminder-row .input { width: auto; }
+
+/* ---------- Today view: to-do lists ---------- */
+.card-head { display: flex; align-items: center; gap: .5rem; margin-bottom: .75rem; }
+.card-head h2 { margin: 0; }
+.card-head > :last-child:not(h2) { margin-left: auto; font-size: .85rem; }
+.count-pill { min-width: 1.6rem; padding: .05rem .5rem; border-radius: 999px; text-align: center; font-weight: 700; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+
+.todo-add { display: flex; gap: .5rem; margin-bottom: .5rem; }
+.todo-add .btn.round { flex-shrink: 0; width: 40px; height: 40px; }
+.todo-add .btn:disabled { opacity: .45; cursor: default; filter: none; }
+.todo-empty { margin: .25rem 0 0; font-size: .9rem; }
+
+.todo-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.todo { border-bottom: 1px solid var(--border); }
+.todo:last-child { border-bottom: none; }
+.todo-row { display: flex; align-items: center; gap: .6rem; min-height: 46px; }
+.todo-check { width: 22px; height: 22px; flex-shrink: 0; margin: 0 0 0 .25rem; accent-color: var(--accent); cursor: pointer; }
+.todo-title {
+    flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .5rem;
+    padding: .6rem .25rem; border: none; background: none; color: var(--text);
+    font: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere;
+}
+.todo.done .todo-title > span:first-child { text-decoration: line-through; color: var(--muted); }
+.todo-tag { font-size: .75rem; color: var(--muted); white-space: nowrap; }
+.todo-edit { display: flex; flex-direction: column; gap: .25rem; padding: 0 0 .75rem 2.1rem; }
+.btn.danger-text { color: var(--danger); }
+
+.more-today summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .6rem; font-weight: 700; }
+.more-today[open] summary { margin-bottom: 1rem; }
+.more-today h2 { margin-top: 1.25rem; }
+.more-today summary + h2 { margin-top: 0; }

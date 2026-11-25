@@ -1,0 +1,125 @@
+@inject TrackerService Tracker
+@inject ToastService Toasts
+
+<section class="card todo-card" data-testid="todo-@TestId" aria-label="@Title">
+    <div class="card-head">
+        <h2>@Title</h2>
+        @if (OpenCount > 0)
+        {
+            <span class="count-pill" data-testid="todo-count">@OpenCount</span>
+        }
+    </div>
+
+    <form class="todo-add" @onsubmit="AddAsync">
+        <input class="input" placeholder="@Placeholder" aria-label="@Placeholder" maxlength="@TodoItem.MaxTitleLength"
+               data-testid="todo-input" @bind="_draft" @bind:event="oninput" />
+        <button type="submit" class="btn primary round" aria-label="Add to @Title" disabled="@string.IsNullOrWhiteSpace(_draft)"><NavIcon Name="plus" /></button>
+    </form>
+
+    @if (Items.Count == 0)
+    {
+        <p class="muted todo-empty">@EmptyText</p>
+    }
+    else
+    {
+        <ul class="todo-list">
+            @foreach (var todo in Items)
+            {
+                var carried = TodoLists.IsCarriedOver(todo, Tracker.Today);
+                <li class="todo @(todo.IsDone ? "done" : "")" data-testid="todo-item" @key="todo.Id">
+                    <div class="todo-row">
+                        <input type="checkbox" class="todo-check" checked="@todo.IsDone" aria-label="Done: @todo.Title"
+                               @onchange="e => SetDoneAsync(todo, e.Value is true)" />
+                        <button type="button" class="todo-title" aria-expanded="@(_editing == todo.Id)" @onclick="() => ToggleEdit(todo)">
+                            <span>@todo.Title</span>
+                            @if (carried)
+                            {
+                                <span class="todo-tag" data-testid="todo-carried">since @todo.Day!.Value.ToString("ddd d MMM")</span>
+                            }
+                        </button>
+                    </div>
+
+                    @if (_editing == todo.Id)
+                    {
+                        <form class="todo-edit" data-testid="todo-edit" @onsubmit="() => RenameAsync(todo)">
+                            <input class="input" aria-label="Title" maxlength="@TodoItem.MaxTitleLength" @bind="_editTitle" @bind:event="oninput" />
+                            <div class="actions left">
+                                <button type="submit" class="btn primary" disabled="@string.IsNullOrWhiteSpace(_editTitle)">Save</button>
+                                <button type="button" class="btn" data-testid="todo-move" @onclick="() => MoveAsync(todo)">
+                                    @(todo.List == TodoList.Today ? "Move to long term" : "Do it today")
+                                </button>
+                                <span class="spacer"></span>
+                                <button type="button" class="btn ghost danger-text" data-testid="todo-delete" @onclick="() => DeleteAsync(todo)">Delete</button>
+                            </div>
+                        </form>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</section>
+
+@code {
+    private string _draft = "";
+    private Guid? _editing;
+    private string _editTitle = "";
+
+    [Parameter, EditorRequired] public TodoList List { get; set; }
+
+    [Parameter, EditorRequired] public IReadOnlyList<TodoItem> Items { get; set; } = [];
+
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+
+    [Parameter] public string Placeholder { get; set; } = "Add a to-do";
+
+    [Parameter] public string EmptyText { get; set; } = "Nothing to do.";
+
+    private string TestId => List == TodoList.Today ? "today" : "long-term";
+
+    private int OpenCount => Items.Count(t => !t.IsDone);
+
+    private async Task AddAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_draft))
+        {
+            return;
+        }
+
+        await Tracker.AddTodoAsync(_draft, List);
+        _draft = "";
+    }
+
+    private Task SetDoneAsync(TodoItem todo, bool done) => Tracker.SetTodoDoneAsync(todo.Id, done);
+
+    private void ToggleEdit(TodoItem todo)
+    {
+        _editing = _editing == todo.Id ? null : todo.Id;
+        _editTitle = todo.Title;
+    }
+
+    private async Task RenameAsync(TodoItem todo)
+    {
+        if (string.IsNullOrWhiteSpace(_editTitle))
+        {
+            return;
+        }
+
+        await Tracker.RenameTodoAsync(todo.Id, _editTitle);
+        _editing = null;
+    }
+
+    private async Task MoveAsync(TodoItem todo)
+    {
+        var target = todo.List == TodoList.Today ? TodoList.LongTerm : TodoList.Today;
+        _editing = null;
+        await Tracker.MoveTodoAsync(todo.Id, target);
+        Toasts.Show(target == TodoList.Today ? $"“{todo.Title}” moved to today" : $"“{todo.Title}” moved to long term");
+    }
+
+    private async Task DeleteAsync(TodoItem todo)
+    {
+        _editing = null;
+        await Tracker.DeleteTodoAsync(todo.Id);
+        Toasts.Show($"“{todo.Title}” deleted", "Undo", () => Tracker.SaveTodoAsync(todo));
+    }
+}
