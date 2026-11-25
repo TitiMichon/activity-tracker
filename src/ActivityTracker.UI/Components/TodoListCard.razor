@@ -30,7 +30,7 @@
                     <div class="todo-row">
                         <input type="checkbox" class="todo-check" checked="@todo.IsDone" aria-label="Done: @todo.Title"
                                @onchange="e => SetDoneAsync(todo, e.Value is true)" />
-                        <button type="button" class="todo-title" aria-expanded="@(_editing == todo.Id)" @onclick="() => ToggleEdit(todo)">
+                        <button type="button" class="todo-title" aria-expanded="@AriaBool(_editing == todo.Id)" @onclick="() => ToggleEdit(todo)">
                             <span>@todo.Title</span>
                             @if (carried)
                             {
@@ -115,6 +115,9 @@
         await Tracker.MoveTodoAsync(todo.Id, target);
         Toasts.Show(target == TodoList.Today ? $"“{todo.Title}” moved to today" : $"“{todo.Title}” moved to long term");
     }
+
+    /// <summary>ARIA states need "true"/"false": Blazor would render a C# true as an empty attribute.</summary>
+    private static string AriaBool(bool value) => value ? "true" : "false";
 
     private async Task DeleteAsync(TodoItem todo)
     {

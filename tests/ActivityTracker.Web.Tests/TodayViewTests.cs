@@ -89,6 +89,7 @@ public class TodayViewTests : WebTestBase
         var cut = Render<Home>();
 
         cut.Find(".todo-title").Click();
+        Assert.Equal("true", cut.Find(".todo-title").GetAttribute("aria-expanded"));
         cut.Find("[data-testid=todo-edit] input").Input("Call the bank");
         cut.Find("[data-testid=todo-edit]").Submit();
 
