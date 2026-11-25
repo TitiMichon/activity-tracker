@@ -1,5 +1,5 @@
 using ActivityTracker.Core.Models;
-using ActivityTracker.Web.Pages;
+using ActivityTracker.UI.Pages;
 using Bunit;
 using Bunit.TestDoubles;
 using Microsoft.AspNetCore.Components;

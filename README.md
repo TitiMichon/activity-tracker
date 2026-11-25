@@ -30,7 +30,10 @@ dotnet run --project src/ActivityTracker.Web      # then open the URL printed in
 ```
 src/
   ActivityTracker.Core/        Domain model and logic, no UI: schedules, goals, streaks, heatmap, persistence
-  ActivityTracker.Web/         Blazor WebAssembly PWA (pages, components, browser storage)
+  ActivityTracker.UI/          Shared UI (Razor class library): pages, components, layout, CSS/JS, app services.
+                               Platform services (storage, file export, notifications) sit behind interfaces
+                               in Platform/, with browser implementations; native hosts plug their own.
+  ActivityTracker.Web/         Blazor WebAssembly PWA host (index.html, service worker, manifest)
 tests/
   ActivityTracker.Core.Tests/  Unit tests (xUnit)
   ActivityTracker.Web.Tests/   Component tests (bUnit): UI behavior without a browser

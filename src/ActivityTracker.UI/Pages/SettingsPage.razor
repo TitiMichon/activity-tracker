@@ -1,6 +1,6 @@
 @page "/settings"
 @inherits TrackerComponentBase
-@inject IJSRuntime JS
+@inject IFileExporter Exporter
 @inject ToastService Toasts
 @inject ReminderService Reminders
 
@@ -108,7 +108,7 @@
         Enum.TryParse<DayOfWeek>(e.Value?.ToString(), out var day) ? Tracker.SetFirstDayOfWeekAsync(day) : Task.CompletedTask;
 
     private async Task ExportAsync() =>
-        await JS.InvokeVoidAsync("tracker.download", $"activity-tracker-{Tracker.Today:yyyy-MM-dd}.json", Tracker.Export());
+        await Exporter.ExportAsync($"activity-tracker-{Tracker.Today:yyyy-MM-dd}.json", "application/json", Tracker.Export());
 
     private async Task ImportAsync(InputFileChangeEventArgs e)
     {

@@ -1,4 +1,4 @@
-namespace ActivityTracker.Web.Services;
+namespace ActivityTracker.UI.Services;
 
 /// <summary>A single transient message, optionally with an action such as "Undo".</summary>
 public sealed class ToastService

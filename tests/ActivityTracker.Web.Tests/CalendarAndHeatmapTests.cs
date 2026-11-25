@@ -1,6 +1,6 @@
 using ActivityTracker.Core.Models;
-using ActivityTracker.Web.Components;
-using ActivityTracker.Web.Pages;
+using ActivityTracker.UI.Components;
+using ActivityTracker.UI.Pages;
 using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
