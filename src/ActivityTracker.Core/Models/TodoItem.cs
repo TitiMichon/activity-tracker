@@ -31,6 +31,9 @@ public sealed class TodoItem
     /// <summary>When the item was ticked; null while it is still to do.</summary>
     public DateTime? DoneAt { get; set; }
 
+    /// <summary>Optional widget linked to the item, e.g. a checklist.</summary>
+    public TodoWidget? Widget { get; set; }
+
     [JsonIgnore]
     public bool IsDone => DoneAt is not null;
 }

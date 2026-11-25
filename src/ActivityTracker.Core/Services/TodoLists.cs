@@ -20,18 +20,19 @@ public static class TodoLists
     public static bool IsCarriedOver(TodoItem todo, DateOnly today) =>
         todo.List == TodoList.Today && !todo.IsDone && todo.Day < today;
 
-    /// <exception cref="ArgumentException">The title is empty or too long.</exception>
-    public static string CleanTitle(string? title)
+    /// <summary>Trims a to-do title (or checklist item text, with <paramref name="what"/> = "An item").</summary>
+    /// <exception cref="ArgumentException">The text is empty or too long.</exception>
+    public static string CleanTitle(string? title, string what = "A to-do")
     {
         var clean = title?.Trim() ?? "";
         if (clean.Length == 0)
         {
-            throw new ArgumentException("A to-do needs a title.", nameof(title));
+            throw new ArgumentException($"{what} cannot be empty.", nameof(title));
         }
 
         if (clean.Length > TodoItem.MaxTitleLength)
         {
-            throw new ArgumentException($"A to-do title is at most {TodoItem.MaxTitleLength} characters.", nameof(title));
+            throw new ArgumentException($"{what} is at most {TodoItem.MaxTitleLength} characters.", nameof(title));
         }
 
         return clean;
