@@ -42,6 +42,8 @@ public static class TrackerJson
             throw new FormatException($"Data schema v{data.SchemaVersion} is newer than supported v{TrackerData.CurrentSchemaVersion}. Please update the app.");
         }
 
+        // Exports from before to-dos existed (or edited by hand) may have no list at all.
+        data.Todos ??= [];
         data.SchemaVersion = TrackerData.CurrentSchemaVersion;
         return data;
     }

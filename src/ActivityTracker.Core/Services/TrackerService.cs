@@ -4,10 +4,10 @@ using ActivityTracker.Core.Persistence;
 namespace ActivityTracker.Core.Services;
 
 /// <summary>
-/// Application state: activities, entries and settings. Every mutation is persisted
+/// Application state: activities, entries, to-dos and settings. Every mutation is persisted
 /// immediately and raises <see cref="Changed"/> so the UI can refresh.
 /// </summary>
-public sealed class TrackerService(ITrackerStore store, TimeProvider time)
+public sealed partial class TrackerService(ITrackerStore store, TimeProvider time)
 {
     private TrackerData _data = new();
     private bool _loaded;

@@ -12,6 +12,8 @@ public sealed class TrackerData
     public List<Activity> Activities { get; set; } = [];
 
     public List<Entry> Entries { get; set; } = [];
+
+    public List<TodoItem> Todos { get; set; } = [];
 }
 
 public sealed class TrackerSettings
