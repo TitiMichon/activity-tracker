@@ -1,5 +1,5 @@
 using ActivityTracker.Core.Models;
-using ActivityTracker.Web.Components;
+using ActivityTracker.UI.Components;
 using Bunit;
 
 namespace ActivityTracker.Web.Tests;

@@ -1,7 +1,7 @@
-using ActivityTracker.Core.Persistence;
+﻿using ActivityTracker.Core.Persistence;
 using ActivityTracker.Core.Services;
-using ActivityTracker.Web;
-using ActivityTracker.Web.Services;
+using ActivityTracker.UI;
+using ActivityTracker.UI.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 

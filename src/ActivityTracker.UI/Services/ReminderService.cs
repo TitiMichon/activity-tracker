@@ -1,7 +1,7 @@
 using ActivityTracker.Core.Services;
 using Microsoft.JSInterop;
 
-namespace ActivityTracker.Web.Services;
+namespace ActivityTracker.UI.Services;
 
 /// <summary>
 /// Checks every 30 seconds for planned activities whose reminder time has passed and that are not done yet,

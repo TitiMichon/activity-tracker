@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ActivityTracker.Web\ActivityTracker.Web.csproj" />
+    <ProjectReference Include="..\..\src\ActivityTracker.UI\ActivityTracker.UI.csproj" />
     <ProjectReference Include="..\..\src\ActivityTracker.Core\ActivityTracker.Core.csproj" />
   </ItemGroup>
 

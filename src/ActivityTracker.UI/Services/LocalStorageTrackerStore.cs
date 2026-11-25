@@ -1,7 +1,7 @@
 using ActivityTracker.Core.Persistence;
 using Microsoft.JSInterop;
 
-namespace ActivityTracker.Web.Services;
+namespace ActivityTracker.UI.Services;
 
 /// <summary>Persists the tracker data in the browser's localStorage.</summary>
 public sealed class LocalStorageTrackerStore(IJSRuntime js) : ITrackerStore

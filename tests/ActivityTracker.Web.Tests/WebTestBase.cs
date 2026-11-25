@@ -2,7 +2,7 @@ using System.Globalization;
 using ActivityTracker.Core.Models;
 using ActivityTracker.Core.Persistence;
 using ActivityTracker.Core.Services;
-using ActivityTracker.Web.Services;
+using ActivityTracker.UI.Services;
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;

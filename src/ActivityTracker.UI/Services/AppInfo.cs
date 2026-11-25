@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace ActivityTracker.Web.Services;
+namespace ActivityTracker.UI.Services;
 
 public static class AppInfo
 {

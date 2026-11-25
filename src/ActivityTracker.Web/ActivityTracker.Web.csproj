@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ActivityTracker.Core\ActivityTracker.Core.csproj" />
+    <ProjectReference Include="..\ActivityTracker.UI\ActivityTracker.UI.csproj" />
   </ItemGroup>
 
 </Project>
