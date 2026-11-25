@@ -71,7 +71,24 @@ public class Screenshots(AppFixture app)
 
         entries.Add(new Entry { ActivityId = activities[0].Id, Timestamp = today.ToDateTime(new TimeOnly(8, 10)), Value = 45, Note = "Scales + new song" });
         entries.Add(new Entry { ActivityId = activities[3].Id, Timestamp = today.ToDateTime(new TimeOnly(8, 30)), OptionId = "good" });
-        return TrackerJson.Serialize(new TrackerData { Activities = activities, Entries = entries });
+        var morning = today.ToDateTime(new TimeOnly(7, 30));
+        TodoItem Todo(string title, TodoList list, int daysAgo = 0, bool done = false) => new()
+        {
+            Title = title,
+            List = list,
+            Day = list == TodoList.Today ? today.AddDays(-daysAgo) : null,
+            CreatedAt = morning.AddDays(-daysAgo),
+            DoneAt = done ? morning.AddHours(1) : null,
+        };
+        var todos = new List<TodoItem>
+        {
+            Todo("Call the dentist", TodoList.Today, daysAgo: 1),
+            Todo("Do the groceries", TodoList.Today),
+            Todo("Reply to Sam", TodoList.Today, done: true),
+            Todo("Learn the Blackbird chords", TodoList.LongTerm),
+            Todo("Plan the summer holidays", TodoList.LongTerm),
+        };
+        return TrackerJson.Serialize(new TrackerData { Activities = activities, Entries = entries, Todos = todos });
     }
 }
 

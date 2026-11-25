@@ -33,12 +33,14 @@ public class UserJourneyTests(AppFixture app)
         await Expect(page.GetByTestId("activity-name")).ToHaveValueAsync("Sport");
 
         await page.GetByRole(AriaRole.Link, new() { Name = "Today" }).ClickAsync();
+        await OpenMoreForTodayAsync(page);
         await page.GetByRole(AriaRole.Button, new() { Name = "Log Sport" }).ClickAsync();
         await Expect(page.Locator(".toast")).ToContainTextAsync("Sport");
         await Expect(page.GetByTestId("entry-list")).ToContainTextAsync("Sport");
 
         // Data survives a reload (localStorage).
         await page.ReloadAsync();
+        await OpenMoreForTodayAsync(page);
         await Expect(page.GetByTestId("entry-list")).ToContainTextAsync("Sport");
 
         await page.GetByRole(AriaRole.Link, new() { Name = "Calendar" }).ClickAsync();
@@ -65,6 +67,7 @@ public class UserJourneyTests(AppFixture app)
         await Expect(page.GetByTestId("activity-list")).ToContainTextAsync("Guitar");
 
         await page.GetByRole(AriaRole.Link, new() { Name = "Today" }).ClickAsync();
+        await OpenMoreForTodayAsync(page);
         await page.GetByRole(AriaRole.Button, new() { Name = "Log Guitar" }).ClickAsync();
         await page.GetByLabel("Value").FillAsync("25");
         await page.GetByTestId("qa-add").ClickAsync();
@@ -111,7 +114,7 @@ public class UserJourneyTests(AppFixture app)
         await tile.ClickAsync();
         await tile.ClickAsync();
         await Expect(tile).ToContainTextAsync("3 / 3 today");
-        await Expect(page.Locator(".planned-list")).ToContainTextAsync("Done ✓");
+        await Expect(page.GetByTestId("scheduled-summary")).ToHaveTextAsync("1 / 1 done");
 
         await page.GetByRole(AriaRole.Link, new() { Name = "Calendar" }).ClickAsync();
         await Expect(page.Locator(".month-day.today .badge")).ToHaveCountAsync(0);
@@ -124,6 +127,7 @@ public class UserJourneyTests(AppFixture app)
         var page = await app.NewPageAsync("activities");
         await page.GetByTestId("template-sport").ClickAsync();
         await page.GetByRole(AriaRole.Link, new() { Name = "Today" }).ClickAsync();
+        await OpenMoreForTodayAsync(page);
         await page.GetByRole(AriaRole.Button, new() { Name = "Log Sport" }).ClickAsync();
 
         await page.GetByRole(AriaRole.Button, new() { Name = "Edit Sport entry" }).ClickAsync();
@@ -134,6 +138,36 @@ public class UserJourneyTests(AppFixture app)
     }
 
     [E2EFact]
+    public async Task Plan_the_day_with_to_do_lists()
+    {
+        var page = await app.NewPageAsync();
+        var today = page.GetByTestId("todo-today");
+        var longTerm = page.GetByTestId("todo-long-term");
+
+        // Enter adds the item and keeps the field ready for the next one.
+        await today.GetByTestId("todo-input").FillAsync("Buy milk");
+        await today.GetByTestId("todo-input").PressAsync("Enter");
+        await today.GetByTestId("todo-input").FillAsync("Call the bank");
+        await today.GetByTestId("todo-input").PressAsync("Enter");
+        await longTerm.GetByTestId("todo-input").FillAsync("Paint the fence");
+        await longTerm.GetByRole(AriaRole.Button, new() { Name = "Add to Long-term to-do" }).ClickAsync();
+
+        await Expect(today.GetByTestId("todo-item")).ToHaveCountAsync(2);
+        await Expect(today.GetByTestId("todo-input")).ToHaveValueAsync("");
+        await today.GetByLabel("Done: Buy milk").CheckAsync();
+        await Expect(today.GetByTestId("todo-count")).ToHaveTextAsync("1");
+
+        await longTerm.GetByRole(AriaRole.Button, new() { Name = "Paint the fence" }).ClickAsync();
+        await longTerm.GetByTestId("todo-move").ClickAsync();
+        await Expect(today.GetByTestId("todo-item")).ToHaveCountAsync(3);
+        await Expect(longTerm).ToContainTextAsync("Ideas and projects for later go here.");
+
+        await page.ReloadAsync();
+        await Expect(today.GetByLabel("Done: Buy milk")).ToBeCheckedAsync();
+        await Expect(today).ToContainTextAsync("Paint the fence");
+    }
+
+    [E2EFact]
     public async Task Deep_link_to_week_view_works()
     {
         var page = await app.NewPageAsync("calendar?view=week&date=2026-01-07");
@@ -141,4 +175,7 @@ public class UserJourneyTests(AppFixture app)
         await Expect(page.GetByTestId("week-view")).ToBeVisibleAsync();
         await Expect(page.GetByTestId("calendar-title")).ToHaveTextAsync("5 – 11 Jan 2026");
     }
+
+    /// <summary>Unfolds the bottom of Today (other activities, today's log, objectives).</summary>
+    private static Task OpenMoreForTodayAsync(IPage page) => page.GetByTestId("more-today").Locator("summary").ClickAsync();
 }

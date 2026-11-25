@@ -72,9 +72,9 @@ public class HomeAndSettingsTests : WebTestBase
         var cut = Render<Home>();
 
         Assert.Contains("Monday 16 November 2026", cut.Markup);
-        var planned = cut.Find(".planned-list").TextContent;
-        Assert.Contains("Stretch", planned);
-        Assert.Contains("To do", planned);
+        var scheduled = cut.Find("[data-testid=scheduled-today]").TextContent;
+        Assert.Contains("Stretch", scheduled);
+        Assert.Contains("1 / 2 done", scheduled); // music is logged, stretch is not
         var goal = cut.Find("[data-testid=goal]");
         Assert.Contains("50 / 150 min", goal.TextContent);
         Assert.Equal("33", goal.QuerySelector("[role=progressbar]")!.GetAttribute("aria-valuenow"));

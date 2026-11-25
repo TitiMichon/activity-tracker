@@ -106,7 +106,7 @@ public class RepeatedCheckInTests : WebTestBase
     }
 
     [Fact]
-    public void Home_planned_list_shows_progress()
+    public void Home_scheduled_list_shows_progress()
     {
         var water = Water();
         Sync(Tracker.LogAsync(water.Id));
@@ -114,7 +114,7 @@ public class RepeatedCheckInTests : WebTestBase
 
         var cut = Render<Home>();
 
-        Assert.Contains("2 / 8", cut.Find(".planned-list").TextContent);
+        Assert.Contains("2 / 8 today", cut.Find("[data-testid=scheduled-today]").TextContent);
     }
 
     [Fact]
