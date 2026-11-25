@@ -1,5 +1,5 @@
 using ActivityTracker.Core.Services;
-using Microsoft.JSInterop;
+using ActivityTracker.UI.Platform;
 
 namespace ActivityTracker.UI.Services;
 
@@ -8,7 +8,8 @@ namespace ActivityTracker.UI.Services;
 /// and shows a system notification (when allowed) plus an in-app toast, once per activity and day.
 /// Runs while the app is open (browser tab or installed app): there is no server to push notifications.
 /// </summary>
-public sealed class ReminderService(TrackerService tracker, ToastService toasts, IJSRuntime js, TimeProvider time) : IDisposable
+public sealed class ReminderService(
+    TrackerService tracker, ToastService toasts, INotificationPlatform notifications, IKeyValueStorage storage, TimeProvider time) : IDisposable
 {
     public const string StorageKey = "activity-tracker:reminded";
     private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(30);
@@ -18,9 +19,9 @@ public sealed class ReminderService(TrackerService tracker, ToastService toasts,
     private CancellationTokenSource? _loop;
 
     /// <summary>"granted", "denied", "default" or "unsupported".</summary>
-    public async Task<string> PermissionAsync() => await SafeAsync(() => js.InvokeAsync<string?>("tracker.notificationPermission").AsTask()) ?? "unsupported";
+    public async Task<string> PermissionAsync() => await SafeAsync(notifications.PermissionAsync) ?? "unsupported";
 
-    public async Task<string> RequestPermissionAsync() => await SafeAsync(() => js.InvokeAsync<string?>("tracker.requestNotifications").AsTask()) ?? "unsupported";
+    public async Task<string> RequestPermissionAsync() => await SafeAsync(notifications.RequestPermissionAsync) ?? "unsupported";
 
     public void Start()
     {
@@ -48,13 +49,13 @@ public sealed class ReminderService(TrackerService tracker, ToastService toasts,
 
             var message = ReminderCalculator.Message(activity, tracker.Entries, tracker.Today);
             toasts.Show($"⏰ {message}", duration: TimeSpan.FromSeconds(10));
-            await SafeAsync(() => js.InvokeVoidAsync("tracker.notify", "Reminder", message).AsTask());
+            await SafeAsync(() => notifications.ShowAsync("Reminder", message));
             sent.Add(activity.Id);
         }
 
         if (sent.Count > 0)
         {
-            await SafeAsync(() => js.InvokeVoidAsync("tracker.storageSet", StorageKey, $"{_sentDay:yyyy-MM-dd}|{string.Join(',', _sent)}").AsTask());
+            await SafeAsync(() => storage.SetAsync(StorageKey, $"{_sentDay:yyyy-MM-dd}|{string.Join(',', _sent)}"));
         }
 
         return sent;
@@ -104,7 +105,7 @@ public sealed class ReminderService(TrackerService tracker, ToastService toasts,
 
         _sent.Clear();
         _sentDay = today;
-        var stored = await SafeAsync(() => js.InvokeAsync<string?>("tracker.storageGet", StorageKey).AsTask());
+        var stored = await SafeAsync(() => storage.GetAsync(StorageKey));
         if (stored?.Split('|') is [var day, var ids] && day == today.ToString("yyyy-MM-dd"))
         {
             foreach (var id in ids.Split(',', StringSplitOptions.RemoveEmptyEntries))
@@ -123,8 +124,9 @@ public sealed class ReminderService(TrackerService tracker, ToastService toasts,
         {
             return await call();
         }
-        catch (JSException)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Notifications and storage are best effort.
             return default;
         }
     }
@@ -135,7 +137,7 @@ public sealed class ReminderService(TrackerService tracker, ToastService toasts,
         {
             await call();
         }
-        catch (JSException)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // Notifications and storage are best effort.
         }
