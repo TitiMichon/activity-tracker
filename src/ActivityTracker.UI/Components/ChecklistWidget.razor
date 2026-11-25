@@ -1,0 +1,81 @@
+@* Checklist widget of a to-do, e.g. the shopping list of "Do the groceries". *@
+@inject TrackerService Tracker
+@inject ToastService Toasts
+
+@* Renders nothing once the widget is removed (this component re-renders after its own handlers). *@
+@if (Todo.Widget is not null)
+{
+    <div class="widget" data-testid="checklist" aria-label="Checklist of @Todo.Title">
+        @if (Widget.Items.Count > 0)
+        {
+            <ul class="checklist">
+                @foreach (var item in Widget.Items)
+                {
+                    <li class="@(item.Done ? "done" : "")" @key="item.Id" data-testid="checklist-item">
+                        <label class="check">
+                            <input type="checkbox" checked="@item.Done" @onchange="e => SetDoneAsync(item, e.Value is true)" />
+                            <span>@item.Text</span>
+                        </label>
+                        <button type="button" class="icon-btn sm" aria-label="Remove @item.Text" @onclick="() => Tracker.DeleteChecklistItemAsync(Todo.Id, item.Id)"><NavIcon Name="close" /></button>
+                    </li>
+                }
+            </ul>
+        }
+
+        <form class="todo-add" @onsubmit="AddAsync">
+            <input class="input" placeholder="Add an item" aria-label="Add an item to @Todo.Title" maxlength="@TodoItem.MaxTitleLength"
+                   data-testid="checklist-input" @bind="_draft" @bind:event="oninput" />
+            <button type="submit" class="btn round" aria-label="Add item" disabled="@string.IsNullOrWhiteSpace(_draft)"><NavIcon Name="plus" /></button>
+        </form>
+
+        <button type="button" class="btn link widget-settings-toggle" aria-expanded="@(_settings ? "true" : "false")" data-testid="widget-settings-toggle" @onclick="() => _settings = !_settings">
+            Checklist settings
+        </button>
+
+        @if (_settings)
+        {
+            <div class="widget-settings" data-testid="widget-settings">
+                <label class="check">
+                    <input type="checkbox" checked="@Widget.CompletesTodo" data-testid="widget-completes"
+                           @onchange="e => Tracker.SetWidgetCompletesTodoAsync(Todo.Id, e.Value is true)" />
+                    <span>Tick “@Todo.Title” when every item is ticked</span>
+                </label>
+                <div class="actions left">
+                    <button type="button" class="btn" data-testid="untick-all" disabled="@(!Widget.Items.Any(i => i.Done))"
+                            @onclick="() => Tracker.UntickChecklistAsync(Todo.Id)">Untick all</button>
+                    <button type="button" class="btn" data-testid="remove-ticked" disabled="@(!Widget.Items.Any(i => i.Done))"
+                            @onclick="() => Tracker.RemoveTickedChecklistItemsAsync(Todo.Id)">Remove ticked items</button>
+                    <ConfirmButton Text="Remove checklist" ConfirmText="Remove it and its items?" CssClass="ghost danger-text" OnConfirm="() => Tracker.RemoveWidgetAsync(Todo.Id)" />
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private string _draft = "";
+    private bool _settings;
+
+    [Parameter, EditorRequired] public TodoItem Todo { get; set; } = default!;
+
+    private TodoWidget Widget => Todo.Widget!;
+
+    private async Task AddAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_draft))
+        {
+            return;
+        }
+
+        await Tracker.AddChecklistItemAsync(Todo.Id, _draft);
+        _draft = "";
+    }
+
+    private async Task SetDoneAsync(ChecklistItem item, bool done)
+    {
+        if (await Tracker.SetChecklistItemDoneAsync(Todo.Id, item.Id, done))
+        {
+            Toasts.Show($"All ticked: “{Todo.Title}” is done ✓");
+        }
+    }
+}

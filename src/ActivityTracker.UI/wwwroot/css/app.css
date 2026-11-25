@@ -462,3 +462,28 @@ textarea.input { resize: vertical; }
 .more-today[open] summary { margin-bottom: 1rem; }
 .more-today h2 { margin-top: 1.25rem; }
 .more-today summary + h2 { margin-top: 0; }
+
+/* ---------- To-do widgets ---------- */
+.widget-chip {
+    flex-shrink: 0; padding: .3rem .65rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface)); color: var(--accent);
+    font: inherit; font-size: .8rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.widget-chip[aria-expanded=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.widget {
+    margin: 0 0 .75rem 2.1rem; padding: .6rem .75rem; border-radius: var(--radius-sm);
+    background: var(--surface-2); display: flex; flex-direction: column; gap: .4rem;
+}
+.checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.checklist li { display: flex; align-items: center; gap: .25rem; min-height: 40px; }
+.checklist .check { flex: 1; min-width: 0; overflow-wrap: anywhere; padding: .3rem 0; }
+.checklist li.done .check span { text-decoration: line-through; color: var(--muted); }
+.icon-btn.sm { width: 32px; height: 32px; }
+.icon-btn.sm .nav-icon { width: 16px; height: 16px; }
+.widget .todo-add { margin: 0; }
+.widget .todo-add .input { background: var(--surface); }
+.widget-settings-toggle { align-self: flex-start; font-size: .85rem; }
+.widget-settings { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; }
+.widget-settings .btn:disabled { opacity: .45; cursor: default; }
+.widget-picker { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .5rem; font-size: .9rem; }

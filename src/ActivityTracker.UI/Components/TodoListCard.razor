@@ -37,7 +37,19 @@
                                 <span class="todo-tag" data-testid="todo-carried">since @todo.Day!.Value.ToString("ddd d MMM")</span>
                             }
                         </button>
+                        @if (todo.Widget is { Kind: WidgetKind.Checklist } checklist)
+                        {
+                            <button type="button" class="widget-chip" data-testid="widget-toggle" aria-expanded="@AriaBool(_expanded.Contains(todo.Id))"
+                                    aria-label="Checklist of @todo.Title" @onclick="() => ToggleWidget(todo)">
+                                ☑ @checklist.Items.Count(i => i.Done)/@checklist.Items.Count
+                            </button>
+                        }
                     </div>
+
+                    @if (todo.Widget is not null && _expanded.Contains(todo.Id))
+                    {
+                        <ChecklistWidget Todo="todo" />
+                    }
 
                     @if (_editing == todo.Id)
                     {
@@ -51,6 +63,16 @@
                                 <span class="spacer"></span>
                                 <button type="button" class="btn ghost danger-text" data-testid="todo-delete" @onclick="() => DeleteAsync(todo)">Delete</button>
                             </div>
+                            @if (todo.Widget is null)
+                            {
+                                <div class="widget-picker">
+                                    <span class="muted">Add a widget:</span>
+                                    @foreach (var kind in Enum.GetValues<WidgetKind>())
+                                    {
+                                        <button type="button" class="chip" data-testid="add-widget-@kind.ToString().ToLowerInvariant()" @onclick="() => AddWidgetAsync(todo, kind)">@WidgetLabel(kind)</button>
+                                    }
+                                </div>
+                            }
                         </form>
                     }
                 </li>
@@ -63,6 +85,7 @@
     private string _draft = "";
     private Guid? _editing;
     private string _editTitle = "";
+    private readonly HashSet<Guid> _expanded = [];
 
     [Parameter, EditorRequired] public TodoList List { get; set; }
 
@@ -118,6 +141,27 @@
 
     /// <summary>ARIA states need "true"/"false": Blazor would render a C# true as an empty attribute.</summary>
     private static string AriaBool(bool value) => value ? "true" : "false";
+
+    private static string WidgetLabel(WidgetKind kind) => kind switch
+    {
+        WidgetKind.Checklist => "☑ Checklist",
+        _ => kind.ToString(),
+    };
+
+    private async Task AddWidgetAsync(TodoItem todo, WidgetKind kind)
+    {
+        _editing = null;
+        _expanded.Add(todo.Id);
+        await Tracker.AddWidgetAsync(todo.Id, kind);
+    }
+
+    private void ToggleWidget(TodoItem todo)
+    {
+        if (!_expanded.Remove(todo.Id))
+        {
+            _expanded.Add(todo.Id);
+        }
+    }
 
     private async Task DeleteAsync(TodoItem todo)
     {
