@@ -25,6 +25,26 @@ Requirements: [.NET SDK 10](https://dotnet.microsoft.com/download) (see `global.
 dotnet run --project src/ActivityTracker.Web      # then open the URL printed in the console
 ```
 
+### Android app
+
+The Android app (`src/ActivityTracker.Mobile`, .NET MAUI Blazor Hybrid) shows the same screens as the web app,
+stores its data in the app's private folder, exports backups through the share sheet and uses Android notifications.
+
+Requirements: the .NET `android` workload (`dotnet workload install maui-android`) and the Android SDK (installed with Visual Studio, or `dotnet build -t:InstallAndroidDependencies`).
+
+```powershell
+# Run on a connected phone (USB debugging) or a started emulator
+dotnet build src/ActivityTracker.Mobile -t:Run -f net10.0-android
+
+# Build an installable APK -> artifacts/android/com.titimichon.activitytracker-Signed.apk
+dotnet publish src/ActivityTracker.Mobile -c Release -f net10.0-android -o artifacts/android
+```
+
+To install the APK on a phone: copy it to the phone (or download it from a GitHub release), open it, and allow
+"Install unknown apps" for the app you opened it with when Android asks.
+
+The Mobile project is not in `ActivityTracker.sln` yet, so `validate.ps1` and CI do not need the Android workload.
+
 ## Project layout
 
 ```
@@ -34,6 +54,7 @@ src/
                                Platform services (storage, file export, notifications) sit behind interfaces
                                in Platform/, with browser implementations; native hosts plug their own.
   ActivityTracker.Web/         Blazor WebAssembly PWA host (index.html, service worker, manifest)
+  ActivityTracker.Mobile/      Android app host (.NET MAUI Blazor Hybrid): file storage, share sheet, notifications
 tests/
   ActivityTracker.Core.Tests/  Unit tests (xUnit)
   ActivityTracker.Web.Tests/   Component tests (bUnit): UI behavior without a browser
