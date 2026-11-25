@@ -30,6 +30,7 @@ public abstract class WebTestBase : BunitContext
         Services.AddSingleton<ToastService>();
         Services.AddSingleton<TimeProvider>(Time);
         Services.AddSingleton<ReminderService>();
+        Services.AddSingleton(PlatformInfo.Browser);
         Services.AddSingleton<IKeyValueStorage, BrowserKeyValueStorage>();
         Services.AddSingleton<IFileExporter, BrowserFileExporter>();
         Services.AddSingleton<INotificationPlatform, BrowserNotificationPlatform>();

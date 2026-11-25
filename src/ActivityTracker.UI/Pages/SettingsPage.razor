@@ -1,6 +1,7 @@
 @page "/settings"
 @inherits TrackerComponentBase
 @inject IFileExporter Exporter
+@inject PlatformInfo Platform
 @inject ToastService Toasts
 @inject ReminderService Reminders
 
@@ -27,7 +28,7 @@
     <h2>Reminders</h2>
     <p class="muted">
         Set a reminder time on a planned activity (Activities → edit → Periodicity). If it is not done by then,
-        you get a notification. Reminders work while the app is open, in a tab or installed on your device.
+        you get a notification. @Platform.WhenRemindersWork
     </p>
     @if (ReminderActivities.Count > 0)
     {
@@ -49,10 +50,10 @@
                 <text>✅ Notifications are allowed.</text>
                 break;
             case "denied":
-                <text>🚫 Notifications are blocked. Allow them in your browser's site settings; until then reminders only show inside the app.</text>
+                <text>🚫 Notifications are blocked. @Platform.HowToUnblockNotifications; until then reminders only show inside the app.</text>
                 break;
             case "unsupported":
-                <text>This browser does not support notifications; reminders only show inside the app.</text>
+                <text>@Platform.NotificationsUnsupported; reminders only show inside the app.</text>
                 break;
             default:
                 <button type="button" class="btn primary" data-testid="enable-notifications" @onclick="EnableNotificationsAsync">Allow notifications</button>
@@ -64,7 +65,7 @@
 <section class="card">
     <h2>Your data</h2>
     <p class="muted">
-        Everything is stored on this device, in your browser. Export a backup regularly, or to move your data to another device.
+        Everything is stored on this device, @Platform.WhereDataIsStored. Export a backup regularly, or to move your data to another device.
         You have @Tracker.Activities.Count activities and @Tracker.Entries.Count entries.
     </p>
     <div class="actions left">

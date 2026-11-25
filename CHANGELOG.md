@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Added
 
+- **Android app** (.NET MAUI Blazor Hybrid) with the same screens as the web app: data stored in the app, backups exported through the Android share sheet, imported with the file picker, Android notification permission and notifications (#19).
+
 - **Times per day** for planned activities (e.g. water 8× a day): each tap counts, tiles and the planned list show "3 / 8", the day is done (and the streak continues) only once the target is reached. The month view groups repeated entries into one badge with a count.
 - **Hide from calendar** option per activity. Hidden activities still appear on Today, in the heatmap and when explicitly selected in the calendar filter.
 - **Reminders**: a time per planned activity; if it is not done by then, a notification (when allowed) and an in-app message, once per day. Works while the app is open. Settings lists the reminders and asks for notification permission.

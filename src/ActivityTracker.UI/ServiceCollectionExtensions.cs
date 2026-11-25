@@ -22,6 +22,7 @@ public static class ServiceCollectionExtensions
     /// <summary>Platform services backed by browser APIs (web app).</summary>
     public static IServiceCollection AddBrowserPlatform(this IServiceCollection services)
     {
+        services.AddSingleton(PlatformInfo.Browser);
         services.AddSingleton<IKeyValueStorage, BrowserKeyValueStorage>();
         services.AddSingleton<IFileExporter, BrowserFileExporter>();
         services.AddSingleton<INotificationPlatform, BrowserNotificationPlatform>();

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="456" height="456" viewBox="0 0 456 456">
+  <!-- Calendar with a check: the app logo, kept inside the adaptive-icon safe zone. -->
+  <rect x="138" y="150" width="180" height="164" rx="22" fill="#ffffff"/>
+  <rect x="138" y="150" width="180" height="44" rx="22" fill="#c7d2fe"/>
+  <rect x="138" y="172" width="180" height="22" fill="#c7d2fe"/>
+  <rect x="170" y="132" width="16" height="40" rx="8" fill="#ffffff"/>
+  <rect x="270" y="132" width="16" height="40" rx="8" fill="#ffffff"/>
+  <path d="M180 252 l30 30 l66 -66" fill="none" stroke="#4f46e5" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
