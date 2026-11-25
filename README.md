@@ -11,7 +11,7 @@ It is a Blazor WebAssembly progressive web app: it runs entirely in the browser,
 | **Periodicity** | Anytime, every day, chosen weekdays, every N days, monthly. Start date and optional deadline. Times per day (e.g. water 8×) with "3 / 8" progress. |
 | **Reminders** | A time per planned activity: if not done by then, a notification (while the app is open, in a tab or installed). |
 | **Objectives** | "3× per week", "150 min per week", "500 pages until the deadline"… with progress bars. |
-| **Today** | The home screen to plan the day: a to-do list for today (unfinished items carry over), the activities scheduled today with their reminder time, and a long-term to-do list. Other activities, today's log and objectives are folded below. |
+| **Today** | The home screen to plan the day: a to-do list for today (unfinished items carry over), the activities scheduled today with their reminder time, and a long-term to-do list. A to-do can carry a widget: a checklist (e.g. "Do the groceries" → the items to buy) that ticks the to-do once everything is ticked. Other activities, today's log and objectives are folded below. |
 | **Quick add** | One tap logs a Check activity, Quantity/Scale open a mini picker. Undo in the toast. |
 | **Custom look per entry** | Any entry can override its icon and color (e.g. a special 🎉 day). |
 | **Calendar** | Day / week / month views, filter by activity, planned-but-missed markers. Activities can be hidden from the calendar. |

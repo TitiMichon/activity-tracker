@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ### Added
 
 - **Today view** as the home screen: a to-do list for the day (unfinished items carry over to the next days), the activities scheduled today with their reminder time, and a long-term to-do list. Add, tick, rename, move between lists and delete to-dos right from Today. Other activities, today's log and objectives are folded at the bottom (#24).
+- **Widgets on to-dos**, starting with a **checklist**: "Do the groceries" becomes the list of items to buy, with its progress (☑ 2/5) next to the to-do. Ticking every item ticks the to-do (can be turned off); untick all to reuse the list, remove ticked items, or remove the checklist (#25).
 - **Android app** (.NET MAUI Blazor Hybrid) with the same screens as the web app: data stored in the app, backups exported through the Android share sheet, imported with the file picker, Android notification permission and notifications (#19).
 
 - **Times per day** for planned activities (e.g. water 8× a day): each tap counts, tiles and the planned list show "3 / 8", the day is done (and the streak continues) only once the target is reached. The month view groups repeated entries into one badge with a count.
