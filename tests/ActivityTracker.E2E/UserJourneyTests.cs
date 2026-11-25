@@ -168,6 +168,43 @@ public class UserJourneyTests(AppFixture app)
     }
 
     [E2EFact]
+    public async Task Groceries_to_do_becomes_a_shopping_list()
+    {
+        var page = await app.NewPageAsync();
+        var today = page.GetByTestId("todo-today");
+        await today.GetByTestId("todo-input").FillAsync("Do the groceries");
+        await today.GetByTestId("todo-input").PressAsync("Enter");
+
+        await today.GetByRole(AriaRole.Button, new() { Name = "Do the groceries" }).ClickAsync();
+        await today.GetByTestId("add-widget-checklist").ClickAsync();
+        var list = page.GetByTestId("checklist");
+        foreach (var item in new[] { "Milk", "Eggs", "Bread" })
+        {
+            await list.GetByTestId("checklist-input").FillAsync(item);
+            await list.GetByTestId("checklist-input").PressAsync("Enter");
+        }
+
+        await Expect(page.GetByTestId("widget-toggle")).ToHaveTextAsync("☑ 0/3");
+        await list.GetByRole(AriaRole.Checkbox, new() { Name = "Milk" }).CheckAsync();
+        await list.GetByRole(AriaRole.Checkbox, new() { Name = "Eggs" }).CheckAsync();
+        await Expect(page.GetByTestId("widget-toggle")).ToHaveTextAsync("☑ 2/3");
+        await Expect(today.GetByLabel("Done: Do the groceries")).Not.ToBeCheckedAsync();
+
+        // Ticking the last item completes the to-do.
+        await list.GetByRole(AriaRole.Checkbox, new() { Name = "Bread" }).CheckAsync();
+        await Expect(today.GetByLabel("Done: Do the groceries")).ToBeCheckedAsync();
+        await Expect(page.Locator(".toast")).ToContainTextAsync("is done");
+
+        // The list is kept: reload, unfold it and reuse it.
+        await page.ReloadAsync();
+        await page.GetByTestId("widget-toggle").ClickAsync();
+        await list.GetByTestId("widget-settings-toggle").ClickAsync();
+        await list.GetByTestId("untick-all").ClickAsync();
+        await Expect(page.GetByTestId("widget-toggle")).ToHaveTextAsync("☑ 0/3");
+        await Expect(today.GetByLabel("Done: Do the groceries")).Not.ToBeCheckedAsync();
+    }
+
+    [E2EFact]
     public async Task Deep_link_to_week_view_works()
     {
         var page = await app.NewPageAsync("calendar?view=week&date=2026-01-07");

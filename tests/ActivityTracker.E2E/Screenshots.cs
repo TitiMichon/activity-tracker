@@ -36,6 +36,8 @@ public class Screenshots(AppFixture app)
             }
 
             await page.GotoAsync(app.BaseUrl);
+            await page.GetByTestId("widget-toggle").ClickAsync();
+            await page.GetByTestId("todo-today").ScreenshotAsync(new LocatorScreenshotOptions { Path = Path.Combine(OutputDir!, $"{name}-todo-checklist.png") });
             await page.GetByRole(AriaRole.Button, new() { Name = "Log Mood" }).ClickAsync();
             await page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(OutputDir!, $"{name}-quick-add-mood.png") });
             await page.Context.CloseAsync();
@@ -87,6 +89,16 @@ public class Screenshots(AppFixture app)
             Todo("Reply to Sam", TodoList.Today, done: true),
             Todo("Learn the Blackbird chords", TodoList.LongTerm),
             Todo("Plan the summer holidays", TodoList.LongTerm),
+        };
+        todos[1].Widget = new TodoWidget
+        {
+            Items =
+            [
+                new ChecklistItem { Text = "Milk", Done = true },
+                new ChecklistItem { Text = "Eggs", Done = true },
+                new ChecklistItem { Text = "Tomatoes" },
+                new ChecklistItem { Text = "Coffee" },
+            ],
         };
         return TrackerJson.Serialize(new TrackerData { Activities = activities, Entries = entries, Todos = todos });
     }
