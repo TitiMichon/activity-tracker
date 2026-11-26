@@ -8,6 +8,9 @@ public sealed partial class TrackerService
 
     public TaskItem? GetTask(Guid id) => _data.Tasks.FirstOrDefault(t => t.Id == id);
 
+    /// <summary>Tasks on today's list (see <see cref="TodayTasks.For"/>).</summary>
+    public IReadOnlyList<TaskItem> TasksToday() => TodayTasks.For(_data.Tasks, Today);
+
     /// <summary>Adds a task. Without a planned day it goes to the backlog.</summary>
     /// <exception cref="ArgumentException">The title is empty or too long.</exception>
     /// <exception cref="KeyNotFoundException">The activity does not exist.</exception>
