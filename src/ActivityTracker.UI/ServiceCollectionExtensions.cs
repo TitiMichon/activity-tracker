@@ -26,6 +26,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IKeyValueStorage, BrowserKeyValueStorage>();
         services.AddSingleton<IFileExporter, BrowserFileExporter>();
         services.AddSingleton<INotificationPlatform, BrowserNotificationPlatform>();
+        services.AddSingleton<IReminderScheduler, NoReminderScheduler>();
         return services;
     }
 }

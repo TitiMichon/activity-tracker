@@ -19,6 +19,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IKeyValueStorage>(new FileKeyValueStorage(FileSystem.AppDataDirectory));
         builder.Services.AddSingleton<IFileExporter, ShareFileExporter>();
         builder.Services.AddSingleton<INotificationPlatform, NativeNotificationPlatform>();
+        builder.Services.AddSingleton<IReminderScheduler, AndroidReminderScheduler>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();

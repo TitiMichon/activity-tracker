@@ -11,7 +11,7 @@ public sealed record PlatformInfo(bool IsNative)
     public string WhereDataIsStored => IsNative ? "in the app" : "in your browser";
 
     public string WhenRemindersWork => IsNative
-        ? "Reminders work while the app is running."
+        ? "Reminders arrive even when the app is closed (they can be a few minutes late while the phone is idle)."
         : "Reminders work while the app is open, in a tab or installed on your device.";
 
     public string HowToUnblockNotifications => IsNative

@@ -7,6 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Added
 
+- **Android reminders when the app is closed**: an Android alarm wakes the app at the next reminder time and posts the notification if the activity is still not done (once a day per activity). Alarms are set again after a reboot, an app update or a time zone change. They can be a few minutes late while the phone is idle (#20).
 - **Android APK on every release**, signed with the same release key so new versions install over the previous one and keep your data (#21).
 - **Android app** (.NET MAUI Blazor Hybrid) with the same screens as the web app: data stored in the app, backups exported through the Android share sheet, imported with the file picker, Android notification permission and notifications (#19).
 
