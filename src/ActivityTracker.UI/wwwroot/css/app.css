@@ -431,3 +431,54 @@ textarea.input { resize: vertical; }
 .qa-tile.partial { border-color: color-mix(in srgb, var(--c) 45%, var(--border)); }
 .reminder-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; min-height: 2.5rem; }
 .reminder-row .input { width: auto; }
+
+/* ---------- Today: one list for the day ---------- */
+.today-layout { display: grid; gap: 1rem; align-items: start; }
+.today-main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.today-main > .card, .today-main > .quick-add { margin: 0; }
+
+.card-head { display: flex; align-items: center; gap: .5rem; margin-bottom: .75rem; }
+.card-head h2 { margin: 0; }
+.card-head > :last-child:not(h2) { margin-left: auto; font-size: .85rem; }
+
+.todo-add { display: flex; gap: .5rem; margin-bottom: .5rem; }
+.todo-add .btn.round { flex-shrink: 0; width: 40px; height: 40px; }
+.todo-add .btn:disabled { opacity: .45; cursor: default; filter: none; }
+.todo-empty { margin: .25rem 0 0; font-size: .9rem; }
+
+.todo-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.todo { border-bottom: 1px solid var(--border); }
+.todo:last-child { border-bottom: none; }
+.todo-row { display: flex; align-items: center; gap: .6rem; min-height: 46px; }
+.todo-check { width: 22px; height: 22px; flex-shrink: 0; margin: 0 0 0 .25rem; accent-color: var(--accent); cursor: pointer; }
+.todo-title {
+    flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .5rem;
+    padding: .6rem .25rem; border: none; background: none; color: var(--text);
+    font: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere;
+}
+.todo.done .todo-title > span:first-child, .todo.done .day-activity-name { text-decoration: line-through; color: var(--muted); }
+.todo-tag { font-size: .75rem; color: var(--muted); white-space: nowrap; }
+.todo.overdue .todo-tag { color: var(--danger); font-weight: 600; }
+.todo-edit { display: flex; flex-direction: column; gap: .25rem; padding: 0 0 .75rem 2.1rem; }
+.btn.danger-text { color: var(--danger); }
+
+/* Activity rows: a round log button in the activity color instead of a checkbox. */
+.day-log {
+    flex-shrink: 0; width: 30px; height: 30px; margin-left: .05rem; padding: 0; border-radius: 50%;
+    border: 2px solid var(--c); background: var(--surface); color: var(--c); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; font: inherit; font-weight: 700;
+}
+.day-log .nav-icon { width: 16px; height: 16px; }
+.day-log.partial { background: color-mix(in srgb, var(--c) 18%, var(--surface)); }
+.day-log.done { background: var(--c); color: #fff; }
+.day-count { font-size: .62rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.day-activity-name { flex: 1; min-width: 0; padding: .6rem 0; overflow-wrap: anywhere; }
+.day-activity .todo-tag { margin-left: auto; }
+.day-activity .todo-tag + .todo-tag { margin-left: 0; }
+.day-log-panel { padding: 0 0 .75rem; }
+.day-log-panel .qa-panel { margin-top: 0; }
+
+.more-today summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .6rem; font-weight: 700; }
+.more-today[open] summary { margin-bottom: 1rem; }
+.more-today h2 { margin-top: 1.25rem; }
+.more-today summary + h2 { margin-top: 0; }

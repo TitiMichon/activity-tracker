@@ -1,0 +1,215 @@
+@* Today's list: tasks (planned, due, overdue, carried over) and activities planned today, open first, done last. *@
+@inherits TrackerComponentBase
+@inject ToastService Toasts
+
+<section class="card day-list" data-testid="day-list" aria-label="Today's list">
+    <div class="card-head">
+        <h2>To do today</h2>
+        @if (Total > 0)
+        {
+            <span class="muted" data-testid="day-summary">@DoneCount / @Total done</span>
+        }
+    </div>
+
+    <form class="todo-add" @onsubmit="AddAsync">
+        <input class="input" placeholder="Add a task for today" aria-label="New task for today" maxlength="@TaskItem.MaxTitleLength"
+               data-testid="day-add-input" @bind="_draft" @bind:event="oninput" />
+        <button type="submit" class="btn primary round" aria-label="Add the task" disabled="@string.IsNullOrWhiteSpace(_draft)"><NavIcon Name="plus" /></button>
+    </form>
+
+    @if (Total == 0)
+    {
+        <p class="muted todo-empty">Nothing planned today. Add a task above, or plan activities from the Activities tab.</p>
+    }
+    else
+    {
+        <ul class="todo-list">
+            @foreach (var task in Tasks.Where(t => !t.IsDone))
+            {
+                @TaskRow(task)
+            }
+            @foreach (var a in Scheduled.Where(a => !IsDone(a)))
+            {
+                @ActivityRow(a)
+            }
+            @foreach (var task in Tasks.Where(t => t.IsDone))
+            {
+                @TaskRow(task)
+            }
+            @foreach (var a in Scheduled.Where(IsDone))
+            {
+                @ActivityRow(a)
+            }
+        </ul>
+    }
+</section>
+
+@code {
+    private string _draft = "";
+    private Guid? _editing;
+    private string _editTitle = "";
+    private Guid? _logging;
+
+    private IReadOnlyList<TaskItem> Tasks => Tracker.TasksToday();
+
+    /// <summary>Activities planned today, by reminder time (those without one last).</summary>
+    private IReadOnlyList<Activity> Scheduled => Tracker.DueOn(Tracker.Today)
+        .OrderBy(a => a.ReminderTime ?? TimeOnly.MaxValue)
+        .ThenBy(a => a.SortOrder)
+        .ToList();
+
+    private int Total => Tasks.Count + Scheduled.Count;
+
+    private int DoneCount => Tasks.Count(t => t.IsDone) + Scheduled.Count(IsDone);
+
+    private bool IsDone(Activity a) => Tracker.ProgressOn(a, Tracker.Today).IsDone;
+
+    private RenderFragment TaskRow(TaskItem task) => __builder =>
+    {
+        var tag = TodayTasks.Tag(task, Tracker.Today);
+        var overdue = !task.IsDone && TodayTasks.TimingOf(task, Tracker.Today) == TaskTiming.Overdue;
+        <li class="todo @(task.IsDone ? "done" : "") @(overdue ? "overdue" : "")" data-testid="day-task" @key="task.Id">
+            <div class="todo-row">
+                <input type="checkbox" class="todo-check" checked="@task.IsDone" aria-label="Done: @task.Title"
+                       @onchange="e => Tracker.SetTaskDoneAsync(task.Id, e.Value is true)" />
+                <button type="button" class="todo-title" aria-expanded="@AriaBool(_editing == task.Id)" @onclick="() => ToggleEdit(task)">
+                    <span>@task.Title</span>
+                    @if (tag is not null)
+                    {
+                        <span class="todo-tag" data-testid="task-tag">@tag</span>
+                    }
+                </button>
+            </div>
+
+            @if (_editing == task.Id)
+            {
+                <form class="todo-edit" data-testid="task-edit" @onsubmit="() => RenameAsync(task)">
+                    <input class="input" aria-label="Title" maxlength="@TaskItem.MaxTitleLength" @bind="_editTitle" @bind:event="oninput" />
+                    <div class="actions left">
+                        <button type="submit" class="btn primary" disabled="@string.IsNullOrWhiteSpace(_editTitle)">Save</button>
+                        <span class="spacer"></span>
+                        <button type="button" class="btn ghost danger-text" data-testid="task-delete" @onclick="() => DeleteAsync(task)">Delete</button>
+                    </div>
+                </form>
+            }
+        </li>
+    };
+
+    private RenderFragment ActivityRow(Activity a) => __builder =>
+    {
+        var progress = Tracker.ProgressOn(a, Tracker.Today);
+        var untick = a.Kind == ActivityKind.Check && progress.Required == 1 && progress.IsDone;
+        var detail = Detail(a, progress);
+        <li class="todo day-activity @(progress.IsDone ? "done" : "")" style="--c:@a.Color" data-testid="day-activity" @key="a.Id">
+            <div class="todo-row">
+                <button type="button" class="day-log @(progress.IsDone ? "done" : progress.Count > 0 ? "partial" : "")"
+                        aria-label="@(untick ? "Untick" : "Log") @a.Name" @onclick="() => OnLogAsync(a, untick)">
+                    @if (progress.IsDone)
+                    {
+                        <span aria-hidden="true">✓</span>
+                    }
+                    else if (progress.Required > 1)
+                    {
+                        <span class="day-count">@progress.Count/@progress.Required</span>
+                    }
+                    else if (a.Kind != ActivityKind.Check)
+                    {
+                        <NavIcon Name="plus" />
+                    }
+                </button>
+                <ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="sm" />
+                <span class="day-activity-name">@a.Name</span>
+                @if (detail is not null)
+                {
+                    <span class="todo-tag" data-testid="activity-detail">@detail</span>
+                }
+                @if (a.ReminderTime is { } time && !progress.IsDone)
+                {
+                    <span class="todo-tag day-time" title="Reminder">⏰ @time.ToString("HH:mm")</span>
+                }
+            </div>
+            @if (_logging == a.Id)
+            {
+                <div class="day-log-panel">
+                    <LogPanel Activity="a" OnClose="() => _logging = null" />
+                </div>
+            }
+        </li>
+    };
+
+    /// <summary>"2 / 8" for several times a day, otherwise the last value logged today (e.g. "30 min", "😄 Great").</summary>
+    private string? Detail(Activity a, DayProgress progress)
+    {
+        if (progress.Required > 1)
+        {
+            return progress.IsDone ? progress.Text : null; // the button already shows the count while open
+        }
+
+        if (a.Kind == ActivityKind.Check || progress.Count == 0)
+        {
+            return null;
+        }
+
+        var last = Tracker.EntriesOn(Tracker.Today, a.Id).Last();
+        return EntryAppearance.ValueText(a, last);
+    }
+
+    private async Task OnLogAsync(Activity a, bool untick)
+    {
+        if (untick)
+        {
+            var last = Tracker.EntriesOn(Tracker.Today, a.Id).Last();
+            await Tracker.DeleteEntryAsync(last.Id);
+            Toasts.Show($"{a.Icon} {a.Name} unticked", "Undo", () => Tracker.SaveEntryAsync(last));
+            return;
+        }
+
+        if (a.Kind == ActivityKind.Check)
+        {
+            _logging = null;
+            var entry = await Tracker.LogAsync(a.Id);
+            Toasts.Show($"{a.Icon} {a.Name}: {EntryAppearance.ValueText(a, entry)}", "Undo", () => Tracker.DeleteEntryAsync(entry.Id));
+            return;
+        }
+
+        _logging = _logging == a.Id ? null : a.Id;
+    }
+
+    private async Task AddAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_draft))
+        {
+            return;
+        }
+
+        await Tracker.AddTaskAsync(_draft, plannedDay: Tracker.Today);
+        _draft = "";
+    }
+
+    private void ToggleEdit(TaskItem task)
+    {
+        _editing = _editing == task.Id ? null : task.Id;
+        _editTitle = task.Title;
+    }
+
+    private async Task RenameAsync(TaskItem task)
+    {
+        if (string.IsNullOrWhiteSpace(_editTitle))
+        {
+            return;
+        }
+
+        await Tracker.RenameTaskAsync(task.Id, _editTitle);
+        _editing = null;
+    }
+
+    private async Task DeleteAsync(TaskItem task)
+    {
+        _editing = null;
+        await Tracker.DeleteTaskAsync(task.Id);
+        Toasts.Show($"“{task.Title}” deleted", "Undo", () => Tracker.SaveTaskAsync(task));
+    }
+
+    /// <summary>ARIA states need "true"/"false": Blazor would render a C# true as an empty attribute.</summary>
+    private static string AriaBool(bool value) => value ? "true" : "false";
+}
