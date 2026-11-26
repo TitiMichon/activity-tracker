@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Changed
+
+- **Data format v2** to store tasks. Your data is upgraded automatically the first time v1.2 opens, and backups from v1.0 and v1.1 still import. Backups made with v1.2 need v1.2 or later to import (#30).
+
 ## [1.1.0] - 2026-11-26
 
 ### Added
