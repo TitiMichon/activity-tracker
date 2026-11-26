@@ -11,7 +11,7 @@ What comes next is in the [roadmap](ROADMAP.md).
 |---|---|
 | **Activities** | Name, emoji logo, color. Three kinds: *Check* (done/not done), *Quantity* (value + unit, e.g. 30 min), *Scale* (options with their own icon/color/score, e.g. 😫 → 😄 mood). |
 | **Periodicity** | Anytime, every day, chosen weekdays, every N days, monthly. Start date and optional deadline. Times per day (e.g. water 8×) with "3 / 8" progress. |
-| **Reminders** | A time per planned activity: if not done by then, a notification (while the app is open, in a tab or installed). |
+| **Reminders** | A time per planned activity: if not done by then, a notification. On Android it arrives even when the app is closed; on the web, while the app is open (tab or installed). |
 | **Objectives** | "3× per week", "150 min per week", "500 pages until the deadline"… with progress bars. |
 | **Quick add** | Today page: one tap logs a Check activity, Quantity/Scale open a mini picker. Undo in the toast. |
 | **Custom look per entry** | Any entry can override its icon and color (e.g. a special 🎉 day). |
