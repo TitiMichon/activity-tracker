@@ -8,6 +8,32 @@ namespace ActivityTracker.E2E;
 [Collection(E2ECollection.Name)]
 public class UserJourneyTests(AppFixture app)
 {
+    /// <summary>
+    /// Clicks "Log {name}" on Today: in the day list when the activity is planned today (depends on the real date),
+    /// otherwise in the folded "More for today" section.
+    /// </summary>
+    private static async Task LogOnTodayAsync(IPage page, string name)
+    {
+        // Role queries skip hidden elements, such as the content of a closed <details>.
+        await Expect(page.GetByRole(AriaRole.Button, new() { Name = $"Log {name}", Exact = true, IncludeHidden = true }).First).ToBeAttachedAsync();
+        var visible = page.GetByRole(AriaRole.Button, new() { Name = $"Log {name}", Exact = true });
+        if (await visible.CountAsync() == 0)
+        {
+            await OpenMoreForTodayAsync(page);
+        }
+
+        await visible.First.ClickAsync();
+    }
+
+    private static async Task OpenMoreForTodayAsync(IPage page)
+    {
+        var more = page.GetByTestId("more-today");
+        if (await more.GetAttributeAsync("open") is null)
+        {
+            await more.Locator("summary").ClickAsync();
+        }
+    }
+
     [E2EFact]
     public async Task App_starts_on_today_with_empty_state()
     {
@@ -33,7 +59,7 @@ public class UserJourneyTests(AppFixture app)
         await Expect(page.GetByTestId("activity-name")).ToHaveValueAsync("Sport");
 
         await page.GetByRole(AriaRole.Link, new() { Name = "Today" }).ClickAsync();
-        await page.GetByRole(AriaRole.Button, new() { Name = "Log Sport" }).ClickAsync();
+        await LogOnTodayAsync(page, "Sport");
         await Expect(page.Locator(".toast")).ToContainTextAsync("Sport");
         await Expect(page.GetByTestId("entry-list")).ToContainTextAsync("Sport");
 
@@ -65,7 +91,7 @@ public class UserJourneyTests(AppFixture app)
         await Expect(page.GetByTestId("activity-list")).ToContainTextAsync("Guitar");
 
         await page.GetByRole(AriaRole.Link, new() { Name = "Today" }).ClickAsync();
-        await page.GetByRole(AriaRole.Button, new() { Name = "Log Guitar" }).ClickAsync();
+        await LogOnTodayAsync(page, "Guitar");
         await page.GetByLabel("Value").FillAsync("25");
         await page.GetByTestId("qa-add").ClickAsync();
 
@@ -80,7 +106,7 @@ public class UserJourneyTests(AppFixture app)
         await page.GetByTestId("template-mood").ClickAsync();
         await page.GetByRole(AriaRole.Link, new() { Name = "Today" }).ClickAsync();
 
-        await page.GetByRole(AriaRole.Button, new() { Name = "Log Mood" }).ClickAsync();
+        await LogOnTodayAsync(page, "Mood");
         await page.GetByRole(AriaRole.Button, new() { Name = "Great" }).ClickAsync();
 
         await page.GetByRole(AriaRole.Link, new() { Name = "Heatmap" }).ClickAsync();
@@ -104,14 +130,16 @@ public class UserJourneyTests(AppFixture app)
         // The reminder time has passed and nothing is logged: the reminder shows right away.
         await Expect(page.Locator(".toast")).ToContainTextAsync("Water: 0 / 3 today");
 
+        // Planned daily: it is a row of today's list, each tap counts.
         await page.GetByRole(AriaRole.Link, new() { Name = "Today" }).ClickAsync();
-        var tile = page.GetByRole(AriaRole.Button, new() { Name = "Log Water" });
-        await tile.ClickAsync();
-        await Expect(tile).ToContainTextAsync("1 / 3 today");
-        await tile.ClickAsync();
-        await tile.ClickAsync();
-        await Expect(tile).ToContainTextAsync("3 / 3 today");
-        await Expect(page.Locator(".planned-list")).ToContainTextAsync("Done ✓");
+        var row = page.GetByTestId("day-activity").Filter(new() { HasText = "Water" });
+        var log = row.GetByRole(AriaRole.Button, new() { Name = "Log Water" });
+        await log.ClickAsync();
+        await Expect(log).ToHaveTextAsync("1/3");
+        await log.ClickAsync();
+        await log.ClickAsync();
+        await Expect(row).ToContainTextAsync("Done ✓");
+        await Expect(page.GetByTestId("day-summary")).ToHaveTextAsync("1 / 1 done");
 
         await page.GetByRole(AriaRole.Link, new() { Name = "Calendar" }).ClickAsync();
         await Expect(page.Locator(".month-day.today .badge")).ToHaveCountAsync(0);
@@ -124,13 +152,42 @@ public class UserJourneyTests(AppFixture app)
         var page = await app.NewPageAsync("activities");
         await page.GetByTestId("template-sport").ClickAsync();
         await page.GetByRole(AriaRole.Link, new() { Name = "Today" }).ClickAsync();
-        await page.GetByRole(AriaRole.Button, new() { Name = "Log Sport" }).ClickAsync();
+        await LogOnTodayAsync(page, "Sport");
 
+        await OpenMoreForTodayAsync(page);
         await page.GetByRole(AriaRole.Button, new() { Name = "Edit Sport entry" }).ClickAsync();
         await page.GetByTestId("entry-editor").GetByLabel("Time").FillAsync("00:05");
         await page.GetByTestId("entry-save").ClickAsync();
 
         await Expect(page.GetByTestId("entry-list")).ToContainTextAsync("00:05");
+    }
+
+    [E2EFact]
+    public async Task Tasks_added_on_today_are_ticked_and_kept_after_a_reload()
+    {
+        var page = await app.NewPageAsync();
+        var input = page.GetByTestId("day-add-input");
+
+        await input.FillAsync("Groceries");
+        await input.PressAsync("Enter");
+        await input.FillAsync("Get a present");
+        await input.PressAsync("Enter");
+
+        await Expect(page.GetByTestId("day-task")).ToHaveCountAsync(2);
+        await Expect(input).ToHaveValueAsync("");
+        await page.GetByRole(AriaRole.Checkbox, new() { Name = "Done: Groceries" }).CheckAsync();
+        await Expect(page.GetByTestId("day-summary")).ToHaveTextAsync("1 / 2 done");
+
+        await page.ReloadAsync();
+        await Expect(page.GetByTestId("day-task").First).ToContainTextAsync("Get a present");
+        await Expect(page.GetByRole(AriaRole.Checkbox, new() { Name = "Done: Groceries" })).ToBeCheckedAsync();
+
+        // Delete, then undo.
+        await page.GetByRole(AriaRole.Button, new() { Name = "Get a present" }).ClickAsync();
+        await page.GetByTestId("task-delete").ClickAsync();
+        await Expect(page.GetByTestId("day-task")).ToHaveCountAsync(1);
+        await page.Locator(".toast").GetByRole(AriaRole.Button, new() { Name = "Undo" }).ClickAsync();
+        await Expect(page.GetByTestId("day-task")).ToHaveCountAsync(2);
     }
 
     [E2EFact]
