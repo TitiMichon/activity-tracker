@@ -1,0 +1,99 @@
+@* Logs one entry of a Quantity or Scale activity: value stepper or option buttons, optional note, "More options…" for the full editor. *@
+@inject TrackerService Tracker
+@inject ToastService Toasts
+
+@if (_details is not null)
+{
+    <EntryEditor Entry="_details" IsNew="true" OnClose="OnClose" />
+}
+else
+{
+    <div class="qa-panel card" style="--c:@Activity.Color" data-testid="qa-panel">
+        <div class="qa-panel-head">
+            <ActivityBadge Icon="@Activity.Icon" Color="@Activity.Color" />
+            <strong>@Activity.Name</strong>
+            <button type="button" class="icon-btn" aria-label="Close" @onclick="OnClose"><NavIcon Name="close" /></button>
+        </div>
+
+        @if (Activity.Kind == ActivityKind.Quantity)
+        {
+            <div class="qa-value-row">
+                <button type="button" class="btn round" aria-label="Decrease" @onclick="() => Step(-1)">−</button>
+                <input class="input qa-value" type="number" step="any" min="0" aria-label="Value" @bind="_value" />
+                <span class="qa-unit">@Activity.Unit</span>
+                <button type="button" class="btn round" aria-label="Increase" @onclick="() => Step(1)">+</button>
+            </div>
+        }
+        else if (Activity.Kind == ActivityKind.Scale)
+        {
+            <div class="option-row" role="group" aria-label="Options">
+                @foreach (var o in Activity.Options)
+                {
+                    <button type="button" class="option-btn" style="--c:@o.Color" aria-label="@o.Label" @onclick="() => LogAsync(optionId: o.Id)">
+                        <span class="option-icon">@o.Icon</span>
+                        <span>@o.Label</span>
+                    </button>
+                }
+            </div>
+        }
+
+        <input class="input" placeholder="Note (optional)" aria-label="Note" @bind="_note" />
+
+        <div class="actions">
+            <button type="button" class="btn ghost" @onclick="OpenDetails">More options…</button>
+            @if (Activity.Kind == ActivityKind.Quantity)
+            {
+                <button type="button" class="btn primary" data-testid="qa-add" @onclick="() => LogAsync(value: _value)">Add</button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private Guid _activityId;
+    private double? _value;
+    private string? _note;
+    private Entry? _details;
+
+    [Parameter, EditorRequired] public Activity Activity { get; set; } = default!;
+
+    /// <summary>When the entry happened; null means now.</summary>
+    [Parameter] public DateTime? At { get; set; }
+
+    /// <summary>Called when the panel should go away: logged, closed, or the full editor closed.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (_activityId != Activity.Id)
+        {
+            _activityId = Activity.Id;
+            _value = Activity.DefaultValue ?? Tracker.LastValue(Activity.Id) ?? 1;
+            _note = null;
+            _details = null;
+        }
+    }
+
+    private void Step(int direction)
+    {
+        var step = (Activity.DefaultValue is > 0 and < 5) ? 1 : 5;
+        _value = Math.Max(0, (_value ?? 0) + (direction * step));
+    }
+
+    private async Task LogAsync(double? value = null, string? optionId = null)
+    {
+        var activity = Activity;
+        var entry = await Tracker.LogAsync(activity.Id, value, optionId, At, _note);
+        await OnClose.InvokeAsync();
+        Toasts.Show($"{activity.Icon} {activity.Name}: {EntryAppearance.ValueText(activity, entry)}", "Undo", () => Tracker.DeleteEntryAsync(entry.Id));
+    }
+
+    private void OpenDetails() => _details = new Entry
+    {
+        ActivityId = Activity.Id,
+        Timestamp = At ?? Tracker.Now,
+        Value = Activity.Kind == ActivityKind.Quantity ? _value : null,
+        OptionId = Activity.Kind == ActivityKind.Scale ? Activity.Options.FirstOrDefault()?.Id : null,
+        Note = _note,
+    };
+}
