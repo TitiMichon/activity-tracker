@@ -38,14 +38,24 @@ Requirements: the .NET `android` workload (`dotnet workload install maui-android
 # Run on a connected phone (USB debugging) or a started emulator
 dotnet build src/ActivityTracker.Mobile -t:Run -f net10.0-android
 
-# Build an installable APK -> artifacts/android/com.titimichon.activitytracker-Signed.apk
-dotnet publish src/ActivityTracker.Mobile -c Release -f net10.0-android -o artifacts/android
+# Build an installable APK -> artifacts/android/activity-tracker-v<version>.apk
+./scripts/build-android.ps1
 ```
 
-To install the APK on a phone: copy it to the phone (or download it from a GitHub release), open it, and allow
-"Install unknown apps" for the app you opened it with when Android asks.
+Locally the APK is signed with your debug key unless `ANDROID_KEYSTORE_PATH` and `ANDROID_KEYSTORE_PASSWORD` point to the
+release key. CI builds a (debug-signed) APK on every push and PR; the Release workflow attaches the **release-signed**
+APK to each GitHub release.
 
-The Mobile project is not in `ActivityTracker.sln` yet, so `validate.ps1` and CI do not need the Android workload.
+#### Install on your phone
+
+1. Open the [latest release](https://github.com/TitiMichon/activity-tracker/releases/latest) on the phone and download `activity-tracker-vX.Y.Z.apk`.
+2. Open it and allow "Install unknown apps" for your browser / file manager when Android asks.
+
+Updates install over the previous version and keep your data, as long as both are signed with the release key.
+**Coming from an APK built on a PC** (debug key): Android refuses that update. Export a backup in Settings, uninstall
+the app, install the release APK, then import the backup.
+
+The Mobile project is not in `ActivityTracker.sln`, so `validate.ps1` does not need the Android workload.
 
 ## Project layout
 
@@ -64,10 +74,13 @@ tests/
 scripts/
   validate.ps1                 Full validation of a version (used locally and in CI)
   bump-version.ps1             Bumps the version and finalizes the changelog
+  build-android.ps1            Builds the Android APK (release key when the signing secrets are set)
   prepare-pages.ps1            Adapts the published site for GitHub Pages
 .github/workflows/
-  ci.yml                       On every push / PR: validate.ps1
-  release.yml                  On tag vX.Y.Z: validate, GitHub release (zip), deploy to GitHub Pages
+  ci.yml                       On every push / PR: validate.ps1 + Android APK build
+  changelog.yml                On PRs: requires a CHANGELOG entry for src/ changes (label skip-changelog to bypass)
+  release.yml                  On tag vX.Y.Z (or run by hand): validate, GitHub release with web zip + signed APK,
+                               optional GitHub Pages deploy
 ```
 
 ## Testing
@@ -96,9 +109,11 @@ Release flow:
 # 1. Describe the changes under "## [Unreleased]" in CHANGELOG.md (done in each PR)
 # 2. Bump the version: moves Unreleased into a dated section, commits and tags
 ./scripts/bump-version.ps1 -Part minor -Commit
-# 3. Push: the Release workflow validates, publishes the zip on GitHub Releases and deploys the site
+# 3. Push: the Release workflow validates, then publishes the web zip and the signed APK on GitHub Releases
 git push origin main --follow-tags
 ```
+
+If a release run failed or a tag was pushed before the workflow existed: **Actions → Release → Run workflow** with the tag.
 
 The release pipeline refuses to publish if the tag does not match `Directory.Build.props`, if the changelog has no section for that version, or if any test fails. CI builds get a pre-release suffix (`1.0.0-ci.42`).
 
@@ -109,7 +124,15 @@ The release pipeline refuses to publish if the tag does not match `Directory.Bui
    git remote add origin https://github.com/<you>/<repo>.git
    git push -u origin main --follow-tags
    ```
-2. **Settings → Pages → Source: GitHub Actions** (lets the release workflow deploy the app to `https://<you>.github.io/<repo>/`).
+2. **Android signing key** (once, keep a backup outside GitHub: every update must use the same key):
+   ```powershell
+   keytool -genkeypair -keystore activity-tracker-release.jks -storetype PKCS12 -alias activity-tracker `
+           -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=Activity Tracker"
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("activity-tracker-release.jks")) | gh secret set ANDROID_KEYSTORE_BASE64
+   gh secret set ANDROID_KEYSTORE_PASSWORD      # the password chosen above
+   ```
+3. Optional, **GitHub Pages** (public repositories or paid plans): Settings → Pages → Source: GitHub Actions, then set the
+   repository variable `DEPLOY_PAGES` to `true` so releases also deploy the app to `https://<you>.github.io/<repo>/`.
 3. Recommended: **Settings → Branches → add a rule for `main`**: require the `Build & test` check to pass before merging.
 
 ## Data and privacy
