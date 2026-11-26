@@ -1,26 +1,36 @@
 name: Release
 
-# Triggered by pushing a version tag, e.g.:  git tag v1.0.0 && git push origin v1.0.0
+# Triggered by pushing a version tag, e.g.:  git tag v1.1.0 && git push origin v1.1.0
+# Can also be run by hand (Actions → Release → Run workflow) for an existing tag, e.g. when the
+# tag was pushed before this workflow existed or a run failed.
 on:
   push:
     tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to release (e.g. v1.1.0)
+        required: true
 
 permissions:
-  contents: write   # create the GitHub release
-  pages: write      # deploy to GitHub Pages
-  id-token: write
+  contents: read
 
 concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
 jobs:
-  release:
-    name: Validate & release ${{ github.ref_name }}
+  web:
+    name: Validate & package the web app
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -28,14 +38,14 @@ jobs:
           cache: true
           cache-dependency-path: "**/*.csproj"
 
-      - name: Validate version ${{ github.ref_name }}
+      - name: Validate version ${{ env.TAG }}
         shell: pwsh
-        run: ./scripts/validate.ps1 -ExpectedVersion "${{ github.ref_name }}" -InstallBrowserDeps
+        run: ./scripts/validate.ps1 -ExpectedVersion "$env:TAG" -InstallBrowserDeps
 
       - name: Extract release notes from CHANGELOG.md
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
+          $version = $env:TAG.TrimStart('v')
           $text = Get-Content CHANGELOG.md -Raw
           if ($text -notmatch "(?ms)^## \[$([regex]::Escape($version))\][^\n]*\n(.*?)(?=^## \[|\z)") { throw "No changelog section for $version" }
           Set-Content -Path artifacts/RELEASE_NOTES.md -Value $Matches[1].Trim()
@@ -43,25 +53,97 @@ jobs:
       - name: Package
         run: |
           cd artifacts/publish/wwwroot
-          zip -qr "../../activity-tracker-${{ github.ref_name }}.zip" .
+          zip -qr "../../activity-tracker-$TAG-web.zip" .
 
-      - name: Create GitHub release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: |
+            artifacts/activity-tracker-*-web.zip
+            artifacts/RELEASE_NOTES.md
+            artifacts/publish/wwwroot
+
+  android:
+    name: Build the signed APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/*.csproj"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: "21"
+
+      # Every release must be signed with the same key, or phones refuse the update.
+      - name: Build the APK
+        shell: pwsh
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: ./scripts/build-android.ps1 -InstallDependencies -RequireReleaseKey
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: artifacts/android/*.apk
+
+  publish:
+    name: Publish GitHub release
+    needs: [web, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ github.ref_name }}" "artifacts/activity-tracker-${{ github.ref_name }}.zip" \
-            --title "Activity Tracker ${{ github.ref_name }}" \
-            --notes-file artifacts/RELEASE_NOTES.md \
-            $([[ "${{ github.ref_name }}" == *-* ]] && echo "--prerelease")
+          gh release create "$TAG" dist/web/activity-tracker-*-web.zip dist/android/*.apk \
+            --repo "${{ github.repository }}" \
+            --title "Activity Tracker $TAG" \
+            --notes-file dist/web/RELEASE_NOTES.md \
+            $([[ "$TAG" == *-* ]] && echo "--prerelease")
+
+  pages:
+    name: Deploy to GitHub Pages
+    # Opt-in: set the repository variable DEPLOY_PAGES to "true" once Pages is available
+    # (Settings → Pages → Source: GitHub Actions; private repositories need a paid plan).
+    if: vars.DEPLOY_PAGES == 'true'
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: web
+          path: dist
 
       - name: Prepare GitHub Pages site
         shell: pwsh
-        run: ./scripts/prepare-pages.ps1 -Path artifacts/publish/wwwroot -BasePath "/${{ github.event.repository.name }}/"
+        run: ./scripts/prepare-pages.ps1 -Path dist/publish/wwwroot -BasePath "/${{ github.event.repository.name }}/"
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: artifacts/publish/wwwroot
+          path: dist/publish/wwwroot
 
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
