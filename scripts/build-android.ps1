@@ -84,7 +84,8 @@ else {
 try {
     Step "Publishing the Android app $version (signed with the $signedWith)"
     if (Test-Path $output) { Remove-Item $output -Recurse -Force }
-    $versionArgs = if ($VersionSuffix) { @("-p:VersionSuffix=$VersionSuffix") } else { @() }
+    # @(...) keeps a list: a single-item result would collapse to a string and be passed character by character.
+    $versionArgs = @(if ($VersionSuffix) { "-p:VersionSuffix=$VersionSuffix" })
     Invoke-Native dotnet publish $project -c Release -f $framework -o $output @versionArgs @sdkArgs @signArgs
 }
 finally {
