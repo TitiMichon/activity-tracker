@@ -3,6 +3,8 @@
 Track anything you do (music, sport, reading, mood, habits) on a calendar, with objectives and heatmaps.
 It is a Blazor WebAssembly progressive web app: it runs entirely in the browser, works offline, can be installed on a phone or desktop, and keeps your data on your device.
 
+What comes next is in the [roadmap](ROADMAP.md).
+
 ## Features (v1)
 
 | | |
