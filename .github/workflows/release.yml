@@ -141,7 +141,7 @@ jobs:
         shell: pwsh
         run: ./scripts/prepare-pages.ps1 -Path dist/publish/wwwroot -BasePath "/${{ github.event.repository.name }}/"
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist/publish/wwwroot
 
