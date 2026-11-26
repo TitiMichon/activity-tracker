@@ -13,7 +13,8 @@ What comes next is in the [roadmap](ROADMAP.md).
 | **Periodicity** | Anytime, every day, chosen weekdays, every N days, monthly. Start date and optional deadline. Times per day (e.g. water 8×) with "3 / 8" progress. |
 | **Reminders** | A time per planned activity: if not done by then, a notification. On Android it arrives even when the app is closed; on the web, while the app is open (tab or installed). |
 | **Objectives** | "3× per week", "150 min per week", "500 pages until the deadline"… with progress bars. |
-| **Quick add** | Today page: one tap logs a Check activity, Quantity/Scale open a mini picker. Undo in the toast. |
+| **Today** | One list for the day: tasks planned or due today, overdue ones and unfinished ones from earlier days, then the activities planned today. Type a task and press Enter to add it; tick, rename, delete (with undo). Ticking an activity logs it; Quantity/Scale open a mini picker. |
+| **Quick add** | Other activities, objectives and today's log are one tap away under "More for today". Undo in the toast. |
 | **Custom look per entry** | Any entry can override its icon and color (e.g. a special 🎉 day). |
 | **Calendar** | Day / week / month views, filter by activity, planned-but-missed markers. Activities can be hidden from the calendar. |
 | **Heatmap** | Last 12 months or a given year, for all activities, one activity, or one per activity. Each day takes the color chosen that day (mood option, or the entry's custom color). Streaks and totals. |
