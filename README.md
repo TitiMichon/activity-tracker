@@ -55,6 +55,21 @@ Updates install over the previous version and keep your data, as long as both ar
 **Coming from an APK built on a PC** (debug key): Android refuses that update. Export a backup in Settings, uninstall
 the app, install the release APK, then import the backup.
 
+#### Get notified of new versions (Obtainium)
+
+[Obtainium](https://github.com/ImranR98/Obtainium) watches the GitHub releases and installs updates in one tap
+(Android still asks to confirm each install of an app that doesn't come from the Play Store).
+
+1. Install Obtainium from its [releases](https://github.com/ImranR98/Obtainium/releases) or from F-Droid.
+2. The repository is private, so Obtainium needs a token to read its releases. On GitHub: **Settings → Developer settings →
+   Fine-grained tokens → Generate new token**, repository access *Only select repositories* → `activity-tracker`,
+   permission **Contents: Read-only**. The token stays on your phone and can only read this repository.
+3. In Obtainium: **Settings → GitHub → Personal access token**: paste the token.
+4. **Add app** → `https://github.com/TitiMichon/activity-tracker` → Add. If Activity Tracker is already installed from a
+   release APK, Obtainium recognizes it; otherwise tap **Install**.
+
+Obtainium checks for updates in the background; tap **Update** when a new version shows up. Your data is kept.
+
 The Mobile project is not in `ActivityTracker.sln`, so `validate.ps1` does not need the Android workload.
 
 ## Project layout
