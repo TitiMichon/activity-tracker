@@ -34,6 +34,7 @@ public abstract class WebTestBase : BunitContext
         Services.AddSingleton<IKeyValueStorage, BrowserKeyValueStorage>();
         Services.AddSingleton<IFileExporter, BrowserFileExporter>();
         Services.AddSingleton<INotificationPlatform, BrowserNotificationPlatform>();
+        Services.AddSingleton<IReminderScheduler, NoReminderScheduler>();
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
 

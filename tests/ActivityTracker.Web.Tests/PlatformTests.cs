@@ -85,7 +85,7 @@ public class PlatformTests
         var storage = new MemoryStorage();
         var notifications = new RecordingNotifications();
         var tracker = await TrackerWithReminderAsync(storage);
-        var reminders = new ReminderService(tracker, new ToastService(), notifications, storage, Time);
+        var reminders = new ReminderService(tracker, new ToastService(), notifications, storage, new NoReminderScheduler(), Time);
 
         await reminders.CheckAsync();
 
@@ -99,7 +99,7 @@ public class PlatformTests
     {
         var storage = new MemoryStorage();
         var toasts = new ToastService();
-        var reminders = new ReminderService(await TrackerWithReminderAsync(storage), toasts, new FailingNotifications(), storage, Time);
+        var reminders = new ReminderService(await TrackerWithReminderAsync(storage), toasts, new FailingNotifications(), storage, new NoReminderScheduler(), Time);
 
         Assert.Single(await reminders.CheckAsync());
         Assert.Contains("Stretch", toasts.Current!.Message);
