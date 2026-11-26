@@ -114,7 +114,7 @@ public class RepeatedCheckInTests : WebTestBase
 
         var cut = Render<Home>();
 
-        Assert.Contains("2 / 8", cut.Find(".planned-list").TextContent);
+        Assert.Contains("2/8", cut.Find("[data-testid=day-activity]").TextContent);
     }
 
     [Fact]

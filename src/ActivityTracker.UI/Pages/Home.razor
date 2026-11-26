@@ -10,45 +10,53 @@
     </div>
 </div>
 
-<QuickAdd />
+<div class="today-layout">
+    <div class="today-main">
+        <DayList />
 
-@if (Planned.Count > 0)
-{
-    <section class="card">
-        <h2>Planned today</h2>
-        <ul class="planned-list">
-            @foreach (var a in Planned)
-            {
-                var progress = Tracker.ProgressOn(a, Tracker.Today);
-                var done = progress.IsDone;
-                <li class="@(done ? "done" : "")">
-                    <ActivityBadge Icon="@a.Icon" Color="@a.Color" Size="sm" Faded="@(!done)" />
-                    <span>@a.Name</span>
-                    <span class="muted">@progress.Text</span>
-                </li>
-            }
-        </ul>
-    </section>
-}
-
-@if (WithGoals.Count > 0)
-{
-    <section class="card">
-        <h2>Objectives</h2>
-        @foreach (var a in WithGoals)
+        @if (Tracker.ActiveActivities.Count == 0)
         {
-            <GoalProgressBar Activity="a" Progress="GoalCalculator.Progress(a, Tracker.Entries, Tracker.Today, Tracker.FirstDayOfWeek)" Today="Tracker.Today" />
+            <QuickAdd />
         }
-    </section>
-}
+        else
+        {
+            <details class="card more-today" data-testid="more-today">
+                <summary>
+                    <span>More for today</span>
+                    <small>@MoreSummary</small>
+                </summary>
 
-<section class="card">
-    <h2>Today's log</h2>
-    <EntryList Entries="Tracker.EntriesOn(Tracker.Today).Reverse().ToList()" EmptyText="Nothing logged today. Tap an activity above to add it." />
-</section>
+                @if (Others.Count > 0)
+                {
+                    <h2>Log another activity</h2>
+                    <QuickAdd Activities="Others" />
+                }
+
+                @if (WithGoals.Count > 0)
+                {
+                    <h2>Objectives</h2>
+                    @foreach (var a in WithGoals)
+                    {
+                        <GoalProgressBar Activity="a" Progress="GoalCalculator.Progress(a, Tracker.Entries, Tracker.Today, Tracker.FirstDayOfWeek)" Today="Tracker.Today" />
+                    }
+                }
+
+                <h2>Today's log</h2>
+                <EntryList Entries="Tracker.EntriesOn(Tracker.Today).Reverse().ToList()" EmptyText="Nothing logged today." />
+            </details>
+        }
+    </div>
+</div>
 
 @code {
-    private IReadOnlyList<Activity> Planned => Tracker.DueOn(Tracker.Today);
+    private IReadOnlyList<Activity> Others => Tracker.QuickAddActivities().Where(a => !ScheduleCalculator.IsDue(a, Tracker.Today)).ToList();
 
     private IReadOnlyList<Activity> WithGoals => Tracker.ActiveActivities.Where(a => a.Goal is not null).ToList();
+
+    private string MoreSummary => string.Join(" · ", new[]
+    {
+        Others.Count > 0 ? "other activities" : null,
+        WithGoals.Count > 0 ? "objectives" : null,
+        "today's log",
+    }.Where(s => s is not null));
 }

@@ -71,7 +71,17 @@ public class Screenshots(AppFixture app)
 
         entries.Add(new Entry { ActivityId = activities[0].Id, Timestamp = today.ToDateTime(new TimeOnly(8, 10)), Value = 45, Note = "Scales + new song" });
         entries.Add(new Entry { ActivityId = activities[3].Id, Timestamp = today.ToDateTime(new TimeOnly(8, 30)), OptionId = "good" });
-        return TrackerJson.Serialize(new TrackerData { Activities = activities, Entries = entries });
+        var created = today.AddDays(-7).ToDateTime(new TimeOnly(20, 0));
+        var tasks = new List<TaskItem>
+        {
+            new() { Title = "Groceries", PlannedDay = today, CreatedAt = created },
+            new() { Title = "Get a present for Sam", PlannedDay = today, DueDate = today.AddDays(2), CreatedAt = created },
+            new() { Title = "Pay the electricity bill", DueDate = today.AddDays(-1), CreatedAt = created },
+            new() { Title = "Change the window seal", PlannedDay = today.AddDays(-2), CreatedAt = created },
+            new() { Title = "Call the garage", PlannedDay = today, CreatedAt = created, DoneAt = today.ToDateTime(new TimeOnly(9, 15)) },
+            new() { Title = "Repair the car", CreatedAt = created },
+        };
+        return TrackerJson.Serialize(new TrackerData { Activities = activities, Entries = entries, Tasks = tasks });
     }
 }
 
