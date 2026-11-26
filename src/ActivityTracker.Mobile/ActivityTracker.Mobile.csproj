@@ -14,9 +14,15 @@
     <ApplicationTitle>Activity Tracker</ApplicationTitle>
     <ApplicationId>com.titimichon.activitytracker</ApplicationId>
 
-    <!-- Same version as the web app (Directory.Build.props). Android also needs an increasing integer: 1.2.3 -> 10203. -->
+    <!--
+      Same version as the web app (Directory.Build.props). Android also needs an increasing integer:
+      MAJOR.MINOR.PATCH and a build number -> MMmmpp * 10000 + build, e.g. 1.2.3 -> 102039999 for the release,
+      102030042 for dev build 42 of 1.2.3 (scripts/build-android.ps1 -DevBuildNumber 42). A release is always above its dev builds.
+    -->
+    <AndroidBuildNumber Condition="'$(AndroidBuildNumber)' == ''">9999</AndroidBuildNumber>
+    <_VersionBase>$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse($(VersionPrefix)).Major), 10000)), $([MSBuild]::Multiply($([System.Version]::Parse($(VersionPrefix)).Minor), 100)))), $([System.Version]::Parse($(VersionPrefix)).Build)))</_VersionBase>
     <ApplicationDisplayVersion>$(VersionPrefix)</ApplicationDisplayVersion>
-    <ApplicationVersion>$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse($(VersionPrefix)).Major), 10000)), $([MSBuild]::Multiply($([System.Version]::Parse($(VersionPrefix)).Minor), 100)))), $([System.Version]::Parse($(VersionPrefix)).Build)))</ApplicationVersion>
+    <ApplicationVersion>$([MSBuild]::Add($([MSBuild]::Multiply($(_VersionBase), 10000)), $(AndroidBuildNumber)))</ApplicationVersion>
 
     <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
   </PropertyGroup>
