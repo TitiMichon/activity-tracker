@@ -23,4 +23,10 @@ Tests use a fixed clock (`FakeTimeProvider`, Monday 16 Nov 2026) so dates are de
 ## Data format changes
 
 The persisted JSON has a `schemaVersion` (`TrackerData.CurrentSchemaVersion`).
-Adding optional fields needs no change. A breaking change bumps the schema version, adds a migration in `TrackerJson.Deserialize`, and is a **major** version bump of the app.
+Adding optional fields needs no change. Any other change bumps the schema version and adds a step to `TrackerMigrations` (it works on the raw JSON, so it can rename or reshape fields), with a test that a backup from the previous version still imports.
+Data is always upgraded automatically, so this is a **minor** version of the app (see [ROADMAP.md](ROADMAP.md#versioning)). Older apps refuse newer data with "Please update the app".
+
+| Schema | App | Change |
+|---|---|---|
+| 1 | 1.0 | Activities, entries, settings |
+| 2 | 1.2 | Tasks |
