@@ -5,7 +5,7 @@ name: Release
 # tag was pushed before this workflow existed or a run failed.
 on:
   push:
-    tags: ["v*.*.*"]
+    tags: ["v*.*.*", "!v*-dev.*"] # dev builds are published by the CI workflow
   workflow_dispatch:
     inputs:
       tag:
