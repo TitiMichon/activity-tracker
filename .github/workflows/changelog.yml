@@ -1,0 +1,28 @@
+name: Changelog
+
+# Separate from CI so that adding / removing the skip-changelog label re-runs this check
+# without restarting the (cancellable) build.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    name: Changelog updated
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require a CHANGELOG.md entry for code changes
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          if git diff --name-only "$base" HEAD | grep -qE '^src/'; then
+            git diff --name-only "$base" HEAD | grep -qx 'CHANGELOG.md' \
+              || { echo "::error::src/ changed but CHANGELOG.md was not updated (add the 'skip-changelog' label to bypass)."; exit 1; }
+          fi
+          echo "OK"
