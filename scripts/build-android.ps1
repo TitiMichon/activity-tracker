@@ -48,7 +48,8 @@ if ($env:ANDROID_HOME) { $sdkArgs += "-p:AndroidSdkDirectory=$env:ANDROID_HOME" 
 if ($InstallDependencies) {
     Step "Installing the maui-android workload and Android SDK packages"
     Invoke-Native dotnet workload install maui-android
-    Invoke-Native dotnet build $project -t:InstallAndroidDependencies -f $framework -p:AcceptAndroidSDKLicenses=True @sdkArgs
+    # Quoted: unquoted "-x:y" arguments to a PowerShell function are split in two ("-x:" "y").
+    Invoke-Native dotnet build $project "-t:InstallAndroidDependencies" -f $framework "-p:AcceptAndroidSDKLicenses=True" @sdkArgs
 }
 
 $signArgs = @()
