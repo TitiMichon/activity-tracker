@@ -5,15 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-26
+
 ### Added
 
-- **Android reminders when the app is closed**: an Android alarm wakes the app at the next reminder time and posts the notification if the activity is still not done (once a day per activity). Alarms are set again after a reboot, an app update or a time zone change. They can be a few minutes late while the phone is idle (#20).
-- **Android APK on every release**, signed with the same release key so new versions install over the previous one and keep your data (#21).
-- **Android app** (.NET MAUI Blazor Hybrid) with the same screens as the web app: data stored in the app, backups exported through the Android share sheet, imported with the file picker, Android notification permission and notifications (#19).
-
-- **Times per day** for planned activities (e.g. water 8× a day): each tap counts, tiles and the planned list show "3 / 8", the day is done (and the streak continues) only once the target is reached. The month view groups repeated entries into one badge with a count.
+- **Android app** (.NET MAUI Blazor Hybrid) with the same screens as the web app: data stored in the app, backups exported through the Android share sheet, imported with the file picker, Android notifications (#19).
+- **Android APK on every release**, signed with the same release key so new versions install over the previous one and keep your data; update notifications with Obtainium (#21, #28).
+- **Reminders**: a time per planned activity; if it is not done by then, a notification (when allowed) and an in-app message, once per day. Settings lists the reminders and asks for notification permission. On Android they arrive even when the app is closed (an alarm wakes the app; set again after a reboot, an update or a time zone change; can be a few minutes late while the phone is idle). On the web they work while the app is open (#20).
+- **Times per day** for planned activities (e.g. water 8Ã— a day): each tap counts, tiles and the planned list show "3 / 8", the day is done (and the streak continues) only once the target is reached. The month view groups repeated entries into one badge with a count.
 - **Hide from calendar** option per activity. Hidden activities still appear on Today, in the heatmap and when explicitly selected in the calendar filter.
-- **Reminders**: a time per planned activity; if it is not done by then, a notification (when allowed) and an in-app message, once per day. Works while the app is open. Settings lists the reminders and asks for notification permission.
 
 ### Changed
 
