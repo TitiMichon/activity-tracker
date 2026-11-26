@@ -484,3 +484,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Android signing keys must never be committed (kept outside the repo + GitHub secrets).
+*.jks
+*.keystore
