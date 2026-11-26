@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using ActivityTracker.Core.Models;
 
@@ -25,7 +26,19 @@ public static class TrackerJson
         TrackerData? data;
         try
         {
-            data = JsonSerializer.Deserialize<TrackerData>(json, Options);
+            var node = JsonNode.Parse(json);
+            if (node is null)
+            {
+                return new TrackerData();
+            }
+
+            if (node is not JsonObject root)
+            {
+                throw new FormatException("The data is not a valid Activity Tracker export.");
+            }
+
+            TrackerMigrations.Upgrade(root);
+            data = root.Deserialize<TrackerData>(Options);
         }
         catch (JsonException ex)
         {
@@ -37,12 +50,16 @@ public static class TrackerJson
             return new TrackerData();
         }
 
-        if (data.SchemaVersion > TrackerData.CurrentSchemaVersion)
+        // Lists written as null by hand-edited files.
+        data.Settings ??= new TrackerSettings();
+        data.Activities ??= [];
+        data.Entries ??= [];
+        data.Tasks ??= [];
+        foreach (var task in data.Tasks)
         {
-            throw new FormatException($"Data schema v{data.SchemaVersion} is newer than supported v{TrackerData.CurrentSchemaVersion}. Please update the app.");
+            task.Subtasks ??= [];
         }
 
-        data.SchemaVersion = TrackerData.CurrentSchemaVersion;
         return data;
     }
 
