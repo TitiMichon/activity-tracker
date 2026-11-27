@@ -59,7 +59,7 @@ public static class TodayTasks
         _ => null,
     };
 
-    private static string Day(DateOnly day, DateOnly today) =>
+    internal static string Day(DateOnly day, DateOnly today) =>
         day == today.AddDays(-1) ? "yesterday"
         : day == today.AddDays(1) ? "tomorrow"
         : day.ToString(day.Year == today.Year ? "ddd d MMM" : "ddd d MMM yyyy");
