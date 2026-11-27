@@ -10,6 +10,7 @@
     --accent: #4f46e5;
     --accent-text: #ffffff;
     --danger: #dc2626;
+    --warning: #c2410c;
     --heat-empty: #ebebf2;
     --radius: 14px;
     --radius-sm: 9px;
@@ -30,6 +31,7 @@
         --accent: #818cf8;
         --accent-text: #0d0d14;
         --danger: #f87171;
+        --warning: #fb923c;
         --heat-empty: #262632;
         --shadow: none;
     }
@@ -436,6 +438,15 @@ textarea.input { resize: vertical; }
 .today-layout { display: grid; gap: 1rem; align-items: start; }
 .today-main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
 .today-main > .card, .today-main > .quick-add { margin: 0; }
+.today-side > .card { margin: 0; }
+.segmented.today-switch { margin-bottom: 0; }
+@media (min-width: 900px) {
+    .today-layout { grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); }
+    .segmented.today-switch { display: none; }
+}
+@media (max-width: 899.98px) {
+    .today-layout.show-backlog .today-main, .today-layout:not(.show-backlog) .today-side { display: none; }
+}
 
 .card-head { display: flex; align-items: center; gap: .5rem; margin-bottom: .75rem; }
 .card-head h2 { margin: 0; }
@@ -459,6 +470,10 @@ textarea.input { resize: vertical; }
 .todo.done .todo-title > span:first-child, .todo.done .day-activity-name { text-decoration: line-through; color: var(--muted); }
 .todo-tag { font-size: .75rem; color: var(--muted); white-space: nowrap; }
 .todo.overdue .todo-tag { color: var(--danger); font-weight: 600; }
+.todo.soon .todo-tag:nth-of-type(2) { color: var(--warning); font-weight: 600; }
+.todo-plan { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .5rem; }
+.todo-plan label { font-size: .85rem; color: var(--muted); }
+.todo-plan .input { width: auto; }
 .todo-edit { display: flex; flex-direction: column; gap: .25rem; padding: 0 0 .75rem 2.1rem; }
 .btn.danger-text { color: var(--danger); }
 

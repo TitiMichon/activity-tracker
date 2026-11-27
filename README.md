@@ -14,6 +14,7 @@ What comes next is in the [roadmap](ROADMAP.md).
 | **Reminders** | A time per planned activity: if not done by then, a notification. On Android it arrives even when the app is closed; on the web, while the app is open (tab or installed). |
 | **Objectives** | "3× per week", "150 min per week", "500 pages until the deadline"… with progress bars. |
 | **Today** | One list for the day: tasks planned or due today, overdue ones and unfinished ones from earlier days, then the activities planned today. Type a task and press Enter to add it; tick, rename, delete (with undo). Ticking an activity logs it; Quantity/Scale open a mini picker. |
+| **Backlog** | Tasks for no particular day (repair the car, change the window…), sorted by due date with a "due in 3 days" badge. Plan one for today or another day; send a task of today back. A tab next to Today on phones, the right column on wide screens. |
 | **Updates (Android)** | The app offers new versions and installs them in one tap: releases only, or every change merged (dev builds). |
 | **Quick add** | Other activities, objectives and today's log are one tap away under "More for today". Undo in the toast. |
 | **Custom look per entry** | Any entry can override its icon and color (e.g. a special 🎉 day). |

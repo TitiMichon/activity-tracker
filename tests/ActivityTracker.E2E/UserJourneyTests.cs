@@ -191,6 +191,38 @@ public class UserJourneyTests(AppFixture app)
     }
 
     [E2EFact]
+    public async Task Backlog_task_is_planned_for_today_and_sent_back()
+    {
+        var page = await app.NewPageAsync();
+        var input = page.GetByTestId("backlog-add-input");
+
+        // Wide screen: the backlog is the right column, the switch is hidden.
+        await Expect(page.GetByTestId("backlog")).ToBeVisibleAsync();
+        await Expect(page.GetByTestId("show-backlog")).ToBeHiddenAsync();
+        await input.FillAsync("Repair the car");
+        await input.PressAsync("Enter");
+        await Expect(page.GetByTestId("backlog-task")).ToHaveCountAsync(1);
+        await Expect(page.GetByTestId("day-task")).ToHaveCountAsync(0);
+
+        await page.GetByTestId("backlog-task").GetByRole(AriaRole.Button, new() { Name = "Repair the car" }).ClickAsync();
+        await page.GetByTestId("task-plan-today").ClickAsync();
+        await Expect(page.GetByTestId("backlog-task")).ToHaveCountAsync(0);
+        await Expect(page.GetByTestId("day-task")).ToContainTextAsync("Repair the car");
+
+        await page.GetByTestId("day-task").GetByRole(AriaRole.Button, new() { Name = "Repair the car" }).ClickAsync();
+        await page.GetByTestId("task-to-backlog").ClickAsync();
+        await Expect(page.GetByTestId("backlog-task")).ToHaveCountAsync(1);
+
+        // Phone: one column at a time.
+        await page.SetViewportSizeAsync(390, 844);
+        await Expect(page.GetByTestId("backlog")).ToBeHiddenAsync();
+        await page.GetByTestId("show-backlog").ClickAsync();
+        await Expect(page.GetByTestId("backlog")).ToBeVisibleAsync();
+        await Expect(page.GetByTestId("day-list")).ToBeHiddenAsync();
+        await Expect(page.GetByTestId("show-backlog")).ToHaveTextAsync("Backlog (1)");
+    }
+
+    [E2EFact]
     public async Task Deep_link_to_week_view_works()
     {
         var page = await app.NewPageAsync("calendar?view=week&date=2026-01-07");

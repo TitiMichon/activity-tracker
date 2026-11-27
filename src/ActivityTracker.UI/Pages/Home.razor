@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @inherits TrackerComponentBase
 
 <PageTitle>Today · Activity Tracker</PageTitle>
@@ -10,7 +10,15 @@
     </div>
 </div>
 
-<div class="today-layout">
+@* Phones show one column at a time; wide screens show the backlog on the right and hide the switch. *@
+<div class="segmented wide today-switch" role="group" aria-label="Show">
+    <button type="button" class="@(_backlog ? "" : "active")" aria-pressed="@(_backlog ? "false" : "true")" data-testid="show-today"
+            @onclick="() => _backlog = false">Today</button>
+    <button type="button" class="@(_backlog ? "active" : "")" aria-pressed="@(_backlog ? "true" : "false")" data-testid="show-backlog"
+            @onclick="() => _backlog = true">Backlog@(BacklogCount > 0 ? $" ({BacklogCount})" : "")</button>
+</div>
+
+<div class="today-layout @(_backlog ? "show-backlog" : "")">
     <div class="today-main">
         <DayList />
 
@@ -46,9 +54,17 @@
             </details>
         }
     </div>
+
+    <aside class="today-side">
+        <BacklogList />
+    </aside>
 </div>
 
 @code {
+    private bool _backlog;
+
+    private int BacklogCount => Tracker.Backlog().Count;
+
     private IReadOnlyList<Activity> Others => Tracker.QuickAddActivities().Where(a => !ScheduleCalculator.IsDue(a, Tracker.Today)).ToList();
 
     private IReadOnlyList<Activity> WithGoals => Tracker.ActiveActivities.Where(a => a.Goal is not null).ToList();

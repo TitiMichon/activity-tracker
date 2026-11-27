@@ -80,6 +80,9 @@ public class Screenshots(AppFixture app)
             new() { Title = "Change the window seal", PlannedDay = today.AddDays(-2), CreatedAt = created },
             new() { Title = "Call the garage", PlannedDay = today, CreatedAt = created, DoneAt = today.ToDateTime(new TimeOnly(9, 15)) },
             new() { Title = "Repair the car", CreatedAt = created },
+            new() { Title = "Book the dentist", DueDate = today.AddDays(3), CreatedAt = created },
+            new() { Title = "File the taxes", DueDate = today.AddDays(24), CreatedAt = created },
+            new() { Title = "Sort the photos", PlannedDay = today.AddDays(4), CreatedAt = created },
         };
         return TrackerJson.Serialize(new TrackerData { Activities = activities, Entries = entries, Tasks = tasks });
     }

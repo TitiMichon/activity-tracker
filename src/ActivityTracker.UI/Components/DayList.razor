@@ -26,7 +26,7 @@
         <ul class="todo-list">
             @foreach (var task in Tasks.Where(t => !t.IsDone))
             {
-                @TaskRow(task)
+                <TaskRow @key="task.Id" Item="task" Tags="[TodayTasks.Tag(task, Tracker.Today)]" State="@(Overdue(task) ? "overdue" : null)" />
             }
             @foreach (var a in Scheduled.Where(a => !IsDone(a)))
             {
@@ -34,7 +34,7 @@
             }
             @foreach (var task in Tasks.Where(t => t.IsDone))
             {
-                @TaskRow(task)
+                <TaskRow @key="task.Id" Item="task" Tags="[TodayTasks.Tag(task, Tracker.Today)]" State="@(Overdue(task) ? "overdue" : null)" />
             }
             @foreach (var a in Scheduled.Where(IsDone))
             {
@@ -46,8 +46,6 @@
 
 @code {
     private string _draft = "";
-    private Guid? _editing;
-    private string _editTitle = "";
     private Guid? _logging;
 
     private IReadOnlyList<TaskItem> Tasks => Tracker.TasksToday();
@@ -64,36 +62,7 @@
 
     private bool IsDone(Activity a) => Tracker.ProgressOn(a, Tracker.Today).IsDone;
 
-    private RenderFragment TaskRow(TaskItem task) => __builder =>
-    {
-        var tag = TodayTasks.Tag(task, Tracker.Today);
-        var overdue = !task.IsDone && TodayTasks.TimingOf(task, Tracker.Today) == TaskTiming.Overdue;
-        <li class="todo @(task.IsDone ? "done" : "") @(overdue ? "overdue" : "")" data-testid="day-task" @key="task.Id">
-            <div class="todo-row">
-                <input type="checkbox" class="todo-check" checked="@task.IsDone" aria-label="Done: @task.Title"
-                       @onchange="e => Tracker.SetTaskDoneAsync(task.Id, e.Value is true)" />
-                <button type="button" class="todo-title" aria-expanded="@AriaBool(_editing == task.Id)" @onclick="() => ToggleEdit(task)">
-                    <span>@task.Title</span>
-                    @if (tag is not null)
-                    {
-                        <span class="todo-tag" data-testid="task-tag">@tag</span>
-                    }
-                </button>
-            </div>
-
-            @if (_editing == task.Id)
-            {
-                <form class="todo-edit" data-testid="task-edit" @onsubmit="() => RenameAsync(task)">
-                    <input class="input" aria-label="Title" maxlength="@TaskItem.MaxTitleLength" @bind="_editTitle" @bind:event="oninput" />
-                    <div class="actions left">
-                        <button type="submit" class="btn primary" disabled="@string.IsNullOrWhiteSpace(_editTitle)">Save</button>
-                        <span class="spacer"></span>
-                        <button type="button" class="btn ghost danger-text" data-testid="task-delete" @onclick="() => DeleteAsync(task)">Delete</button>
-                    </div>
-                </form>
-            }
-        </li>
-    };
+    private bool Overdue(TaskItem task) => !task.IsDone && TodayTasks.TimingOf(task, Tracker.Today) == TaskTiming.Overdue;
 
     private RenderFragment ActivityRow(Activity a) => __builder =>
     {
@@ -185,31 +154,4 @@
         await Tracker.AddTaskAsync(_draft, plannedDay: Tracker.Today);
         _draft = "";
     }
-
-    private void ToggleEdit(TaskItem task)
-    {
-        _editing = _editing == task.Id ? null : task.Id;
-        _editTitle = task.Title;
-    }
-
-    private async Task RenameAsync(TaskItem task)
-    {
-        if (string.IsNullOrWhiteSpace(_editTitle))
-        {
-            return;
-        }
-
-        await Tracker.RenameTaskAsync(task.Id, _editTitle);
-        _editing = null;
-    }
-
-    private async Task DeleteAsync(TaskItem task)
-    {
-        _editing = null;
-        await Tracker.DeleteTaskAsync(task.Id);
-        Toasts.Show($"“{task.Title}” deleted", "Undo", () => Tracker.SaveTaskAsync(task));
-    }
-
-    /// <summary>ARIA states need "true"/"false": Blazor would render a C# true as an empty attribute.</summary>
-    private static string AriaBool(bool value) => value ? "true" : "false";
 }
