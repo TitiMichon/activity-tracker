@@ -8,6 +8,15 @@ namespace ActivityTracker.Web.Tests;
 public class TodayViewTests : WebTestBase
 {
     [Fact]
+    public void Title_is_the_short_date()
+    {
+        var title = Render<Home>().Find("[data-testid=today-title]");
+
+        Assert.Equal("16 Nov", title.TextContent);
+        Assert.Equal("Monday 16 November 2026", title.GetAttribute("title"));
+    }
+
+    [Fact]
     public void Typing_a_task_and_pressing_enter_plans_it_today()
     {
         var cut = Render<DayList>();
