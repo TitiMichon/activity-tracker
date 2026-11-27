@@ -20,6 +20,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IFileExporter, ShareFileExporter>();
         builder.Services.AddSingleton<INotificationPlatform, NativeNotificationPlatform>();
         builder.Services.AddSingleton<IReminderScheduler, AndroidReminderScheduler>();
+        builder.Services.AddSingleton<IAppUpdater, AndroidAppUpdater>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
