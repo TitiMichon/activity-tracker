@@ -50,6 +50,11 @@ jobs:
     name: Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    outputs:
+      version: ${{ steps.apk.outputs.version }}
+    env:
+      # Changes merged to main become a release-signed dev build; pull requests only check that the app builds.
+      DEV_BUILD: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -64,14 +69,62 @@ jobs:
           distribution: microsoft
           java-version: "21"
 
-      # Debug-signed: proves the app builds. Release-signed APKs only come from the Release workflow.
       - name: Build the APK
+        id: apk
         shell: pwsh
-        run: ./scripts/build-android.ps1 -InstallDependencies -VersionSuffix "ci.${{ github.run_number }}"
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ env.DEV_BUILD == 'true' && secrets.ANDROID_KEYSTORE_BASE64 || '' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ env.DEV_BUILD == 'true' && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
+        run: |
+          if ($env:DEV_BUILD -eq 'true') {
+            ./scripts/build-android.ps1 -InstallDependencies -DevBuildNumber ${{ github.run_number }} -RequireReleaseKey
+          } else {
+            ./scripts/build-android.ps1 -InstallDependencies -VersionSuffix "ci.${{ github.run_number }}"
+          }
 
       - name: Upload the APK
         uses: actions/upload-artifact@v4
         with:
-          name: activity-tracker-android-ci-${{ github.run_number }}
+          name: android
           path: artifacts/android/*.apk
           retention-days: 14
+
+  dev-release:
+    name: Publish the dev build
+    needs: [validate, android]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.android.outputs.version }}
+      MESSAGE: ${{ github.event.head_commit.message }}
+      KEEP: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android
+          path: dist
+
+      # A pre-release: the app offers it on the "every change" channel; Obtainium and "latest" ignore it.
+      # Tags created with the workflow token do not trigger the Release workflow.
+      - name: Create the pre-release
+        run: |
+          {
+            echo "Development build of ${GITHUB_SHA::7}, signed with the release key."
+            echo
+            echo "${MESSAGE:-}"
+          } > notes.md
+          gh release create "v$VERSION" dist/*.apk \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "Dev build $VERSION" --notes-file notes.md
+
+      - name: Keep only the last ${{ env.KEEP }} dev builds
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 200 --json tagName,isPrerelease,createdAt \
+            --jq '[.[] | select(.isPrerelease and (.tagName | contains("-dev.")))] | sort_by(.createdAt) | reverse | .[(env.KEEP | tonumber):] | .[].tagName' |
+          while read -r tag; do
+            echo "Deleting $tag"
+            gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          done

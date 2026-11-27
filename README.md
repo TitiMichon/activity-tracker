@@ -44,12 +44,18 @@ dotnet build src/ActivityTracker.Mobile -t:Run -f net10.0-android
 ```
 
 Locally the APK is signed with your debug key unless `ANDROID_KEYSTORE_PATH` and `ANDROID_KEYSTORE_PASSWORD` point to the
-release key. CI builds a (debug-signed) APK on every push and PR; the Release workflow attaches the **release-signed**
-APK to each GitHub release.
+release key. Published APKs are all **release-signed**, so each one installs over the previous one:
+
+| Build | When | Version | Where |
+|---|---|---|---|
+| Release | version tag `vX.Y.Z` | `1.2.0` | [GitHub release](https://github.com/TitiMichon/activity-tracker/releases/latest) |
+| Dev build | every merge to `main` | `1.1.1-dev.42`: the next patch, so newer than the last release and older than the next one | GitHub **pre-release**; only the last 5 are kept |
+| Check | every pull request | `1.1.0-ci.42`, debug key | workflow artifact (not installable over the others) |
 
 #### Install on your phone
 
-1. Open the [latest release](https://github.com/TitiMichon/activity-tracker/releases/latest) on the phone and download `activity-tracker-vX.Y.Z.apk`.
+1. Open the [latest release](https://github.com/TitiMichon/activity-tracker/releases/latest) on the phone and download `activity-tracker-vX.Y.Z.apk`
+   (or the newest **Pre-release** on the [releases page](https://github.com/TitiMichon/activity-tracker/releases) for the latest changes).
 2. Open it and allow "Install unknown apps" for your browser / file manager when Android asks.
 
 Updates install over the previous version and keep your data, as long as both are signed with the release key.
@@ -62,11 +68,8 @@ the app, install the release APK, then import the backup.
 (Android still asks to confirm each install of an app that doesn't come from the Play Store).
 
 1. Install Obtainium from its [releases](https://github.com/ImranR98/Obtainium/releases) or from F-Droid.
-2. The repository is private, so Obtainium needs a token to read its releases. On GitHub: **Settings → Developer settings →
-   Fine-grained tokens → Generate new token**, repository access *Only select repositories* → `activity-tracker`,
-   permission **Contents: Read-only**. The token stays on your phone and can only read this repository.
-3. In Obtainium: **Settings → GitHub → Personal access token**: paste the token.
-4. **Add app** → `https://github.com/TitiMichon/activity-tracker` → Add. If Activity Tracker is already installed from a
+2. **Add app** → `https://github.com/TitiMichon/activity-tracker` → Add (no token needed, the repository is public).
+   To get every dev build too, turn on **Include prereleases**. If Activity Tracker is already installed from a
    release APK, Obtainium recognizes it; otherwise tap **Install**.
 
 Obtainium checks for updates in the background; tap **Update** when a new version shows up. Your data is kept.
@@ -93,7 +96,8 @@ scripts/
   build-android.ps1            Builds the Android APK (release key when the signing secrets are set)
   prepare-pages.ps1            Adapts the published site for GitHub Pages
 .github/workflows/
-  ci.yml                       On every push / PR: validate.ps1 + Android APK build
+  ci.yml                       On every push / PR: validate.ps1 + Android APK build; on main, publishes the
+                               release-signed APK as a dev pre-release (keeps the last 5)
   changelog.yml                On PRs: requires a CHANGELOG entry for src/ changes (label skip-changelog to bypass)
   release.yml                  On tag vX.Y.Z (or run by hand): validate, GitHub release with web zip + signed APK,
                                optional GitHub Pages deploy
@@ -131,7 +135,7 @@ git push origin main --follow-tags
 
 If a release run failed or a tag was pushed before the workflow existed: **Actions → Release → Run workflow** with the tag.
 
-The release pipeline refuses to publish if the tag does not match `Directory.Build.props`, if the changelog has no section for that version, or if any test fails. CI builds get a pre-release suffix (`1.0.0-ci.42`).
+The release pipeline refuses to publish if the tag does not match `Directory.Build.props`, if the changelog has no section for that version, or if any test fails. Pull request builds get a `-ci.N` suffix; builds of `main` are published as `<next patch>-dev.N` pre-releases (see [Android app](#android-app)).
 
 ## One-time GitHub setup
 
