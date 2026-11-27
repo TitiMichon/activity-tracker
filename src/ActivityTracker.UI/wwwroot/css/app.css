@@ -482,3 +482,12 @@ textarea.input { resize: vertical; }
 .more-today[open] summary { margin-bottom: 1rem; }
 .more-today h2 { margin-top: 1.25rem; }
 .more-today summary + h2 { margin-top: 0; }
+
+/* ---------- In-app update (Android) ---------- */
+.update-banner {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .6rem 1rem;
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border-bottom: 1px solid var(--border);
+}
+.update-text { flex: 1; min-width: 12rem; }
+.update-banner .btn { min-height: 36px; }
+.update-note { margin: 0; padding: .5rem 1rem; font-size: .9rem; }

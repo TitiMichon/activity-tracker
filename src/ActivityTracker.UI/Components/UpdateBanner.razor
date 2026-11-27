@@ -1,0 +1,45 @@
+@* "Update available" bar under the top bar (native app only). *@
+@implements IDisposable
+@inject UpdateService Updates
+
+@if (Updates.Available is { } release && (!Updates.IsDismissed || Updates.IsInstalling))
+{
+    <div class="update-banner" role="status" data-testid="update-banner">
+        <span class="update-text">
+            @if (Updates.IsInstalling)
+            {
+                <text>Downloading v@(release.Version)… @Percent</text>
+            }
+            else
+            {
+                <text>Update available: <strong>v@(release.Version)</strong></text>
+            }
+        </span>
+        @if (!Updates.IsInstalling)
+        {
+            <button type="button" class="btn ghost" data-testid="update-later" @onclick="Updates.DismissAsync">Later</button>
+            <button type="button" class="btn primary" data-testid="update-install" @onclick="Updates.InstallAsync">Update</button>
+        }
+    </div>
+}
+@if (Updates.Available is not null && !Updates.IsDismissed)
+{
+    @if (Updates.Hint is { } hint)
+    {
+        <p class="update-note" role="status" data-testid="update-hint">@hint</p>
+    }
+    else if (Updates.Error is { } error)
+    {
+        <p class="update-note error" role="alert">@error</p>
+    }
+}
+
+@code {
+    private string Percent => Updates.Progress > 0 ? $"{Updates.Progress:P0}" : "";
+
+    protected override void OnInitialized() => Updates.Changed += OnChanged;
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Updates.Changed -= OnChanged;
+}

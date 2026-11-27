@@ -1,0 +1,63 @@
+@* Settings → Updates (native app only): installed version, channel, check now. *@
+@implements IDisposable
+@inject UpdateService Updates
+
+@if (Updates.IsSupported)
+{
+    <section class="card" data-testid="update-settings">
+        <h2>Updates</h2>
+        <p class="muted">
+            The app looks for a new version when it starts (at most every @((int)UpdateService.CheckInterval.TotalHours) hours).
+            Installing asks you to confirm; your data is kept.
+        </p>
+
+        <label class="field">
+            <span>Get</span>
+            <select class="input" value="@Updates.Channel" data-testid="update-channel" @onchange="OnChannelChanged">
+                <option value="@UpdateChannel.Stable">Releases only</option>
+                <option value="@UpdateChannel.EveryChange">Every change (dev builds, as soon as they're published)</option>
+            </select>
+        </label>
+
+        <p data-testid="update-status">
+            Installed: <strong>v@(Updates.CurrentVersion)</strong>.
+            @if (Updates.IsChecking)
+            {
+                <text>Checking…</text>
+            }
+            else if (Updates.Error is { } error)
+            {
+                <span class="error">@error</span>
+            }
+            else if (Updates.Available is { } release)
+            {
+                <text>v@(release.Version) is available.</text>
+            }
+            else if (Updates.LastCheck is { } last)
+            {
+                <text>Up to date (checked @last.ToLocalTime().ToString("ddd d MMM HH:mm")).</text>
+            }
+        </p>
+
+        <div class="actions left">
+            @if (Updates.Available is not null)
+            {
+                <button type="button" class="btn primary" data-testid="update-install-settings" disabled="@Updates.IsInstalling" @onclick="Updates.InstallAsync">
+                    @(Updates.IsInstalling ? "Downloading…" : $"Install v{Updates.Available.Version}")
+                </button>
+            }
+            <button type="button" class="btn" data-testid="update-check" disabled="@(Updates.IsChecking || Updates.IsInstalling)" @onclick="Updates.CheckAsync">Check now</button>
+        </div>
+    </section>
+}
+
+@code {
+    protected override void OnInitialized() => Updates.Changed += OnChanged;
+
+    private Task OnChannelChanged(ChangeEventArgs e) =>
+        Enum.TryParse<UpdateChannel>(e.Value?.ToString(), out var channel) ? Updates.SetChannelAsync(channel) : Task.CompletedTask;
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Updates.Changed -= OnChanged;
+}
