@@ -14,6 +14,7 @@ What comes next is in the [roadmap](ROADMAP.md).
 | **Reminders** | A time per planned activity: if not done by then, a notification. On Android it arrives even when the app is closed; on the web, while the app is open (tab or installed). |
 | **Objectives** | "3× per week", "150 min per week", "500 pages until the deadline"… with progress bars. |
 | **Today** | One list for the day: tasks planned or due today, overdue ones and unfinished ones from earlier days, then the activities planned today. Type a task and press Enter to add it; tick, rename, delete (with undo). Ticking an activity logs it; Quantity/Scale open a mini picker. |
+| **Updates (Android)** | The app offers new versions and installs them in one tap: releases only, or every change merged (dev builds). |
 | **Quick add** | Other activities, objectives and today's log are one tap away under "More for today". Undo in the toast. |
 | **Custom look per entry** | Any entry can override its icon and color (e.g. a special 🎉 day). |
 | **Calendar** | Day / week / month views, filter by activity, planned-but-missed markers. Activities can be hidden from the calendar. |
@@ -62,7 +63,20 @@ Updates install over the previous version and keep your data, as long as both ar
 **Coming from an APK built on a PC** (debug key): Android refuses that update. Export a backup in Settings, uninstall
 the app, install the release APK, then import the backup.
 
+#### Updates from inside the app
+
+The Android app looks for a new version when it starts (at most every 6 hours) and shows **Update available**. **Update**
+downloads the APK and opens Android's installer; your data is kept. The first time, Android asks you to allow Activity
+Tracker to install apps: allow it, go back and tap **Update** again. Play Protect may also offer to scan the app, which is
+normal for apps that don't come from the Play Store.
+
+**Settings → Updates**: installed version, **Check now**, and what to get: *Releases only* or *Every change* (the dev
+build of every merged change). Dev builds follow every change by default, releases stay on releases.
+Android only installs a download signed with the same release key as the installed app.
+
 #### Get notified of new versions (Obtainium)
+
+Optional now that the app updates itself.
 
 [Obtainium](https://github.com/ImranR98/Obtainium) watches the GitHub releases and installs updates in one tap
 (Android still asks to confirm each install of an app that doesn't come from the Play Store).

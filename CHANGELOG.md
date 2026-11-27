@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ### Added
 
 - **Dev builds**: every change merged to `main` is published within minutes as a release-signed Android APK (a GitHub pre-release such as `1.1.1-dev.42`), installable over the current version (#59).
+- **Updates from inside the Android app**: it checks GitHub when it starts (at most every 6 hours) and shows "Update available"; one tap downloads the new version and opens Android's installer. Settings → Updates shows the installed version, "Check now" and the channel: releases only, or every change (dev builds) (#60).
 - **Today is one list for the day**: tasks planned or due today, overdue tasks (in red) and unfinished tasks from earlier days ("since Tue 24 Nov"), then the activities planned today with their reminder time. Type a task and press Enter to add it; tick, rename or delete it (with undo). Tapping an activity's round button logs it ("2/8" for several times a day, a mini picker for Quantity and Scale); tapping again unticks a done check-in. Other activities, objectives and today's log moved to the folded "More for today" section (#31).
 
 ### Changed
