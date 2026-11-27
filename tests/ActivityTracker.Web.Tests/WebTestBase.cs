@@ -35,10 +35,18 @@ public abstract class WebTestBase : BunitContext
         Services.AddSingleton<IFileExporter, BrowserFileExporter>();
         Services.AddSingleton<INotificationPlatform, BrowserNotificationPlatform>();
         Services.AddSingleton<IReminderScheduler, NoReminderScheduler>();
+        Services.AddSingleton<IAppUpdater>(Updater);
+        Services.AddSingleton<IReleaseSource>(Releases);
+        Services.AddSingleton<UpdateService>();
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
 
     protected InMemoryTrackerStore Store { get; } = new();
+
+    /// <summary>Not supported by default, like the web app; tests of in-app updates turn it on.</summary>
+    protected FakeAppUpdater Updater { get; } = new();
+
+    protected FakeReleaseSource Releases { get; } = new();
 
     protected FakeTimeProvider Time { get; }
 
