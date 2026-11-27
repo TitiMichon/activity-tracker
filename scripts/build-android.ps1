@@ -120,6 +120,26 @@ $apk = Join-Path $output "activity-tracker-v$version.apk"
 Move-Item $signed.FullName $apk -Force
 Get-ChildItem $output -Exclude (Split-Path $apk -Leaf) | Remove-Item -Recurse -Force
 
+# Debug builds get INTERNET added automatically, release builds only have what the manifest declares (#63).
+Step "Checking the APK permissions"
+$required = @("INTERNET", "POST_NOTIFICATIONS", "RECEIVE_BOOT_COMPLETED", "REQUEST_INSTALL_PACKAGES")
+$sdkDirs = @($env:ANDROID_HOME, $env:ANDROID_SDK_ROOT, (Join-Path ([Environment]::GetFolderPath("LocalApplicationData")) "Android/Sdk")) |
+    Where-Object { $_ -and (Test-Path (Join-Path $_ "build-tools")) }
+$aapt2 = $sdkDirs | ForEach-Object { Get-ChildItem (Join-Path $_ "build-tools/*/aapt2*") -File -ErrorAction SilentlyContinue } |
+    Where-Object { $_.Name -in @("aapt2", "aapt2.exe") } | Sort-Object { $_.Directory.Name -as [version] } |
+    Select-Object -Last 1
+if (-not $aapt2) {
+    if ($env:CI) { throw "aapt2 not found in the Android SDK build-tools: cannot check the APK permissions." }
+    Write-Warning "aapt2 not found in the Android SDK build-tools: APK permissions not checked."
+}
+else {
+    $permissions = & $aapt2.FullName dump permissions $apk
+    if ($LASTEXITCODE -ne 0) { throw "aapt2 dump permissions failed with exit code $LASTEXITCODE" }
+    $missing = $required | Where-Object { -not ($permissions -match "name='android\.permission\.$_'") }
+    if ($missing) { throw "The APK lacks these permissions (declare them in AndroidManifest.xml): $($missing -join ', ')" }
+    Write-Host "Permissions OK: $($required -join ', ')"
+}
+
 Write-Host "`nAPK: $apk ($([math]::Round((Get-Item $apk).Length / 1MB, 1)) MB, $signedWith)" -ForegroundColor Green
 if ($env:GITHUB_OUTPUT) {
     "apk=$apk" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
