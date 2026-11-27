@@ -55,7 +55,7 @@ jobs:
           cd artifacts/publish/wwwroot
           zip -qr "../../activity-tracker-$TAG-web.zip" .
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: web
           path: |
@@ -91,7 +91,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: ./scripts/build-android.ps1 -InstallDependencies -RequireReleaseKey
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: android
           path: artifacts/android/*.apk
