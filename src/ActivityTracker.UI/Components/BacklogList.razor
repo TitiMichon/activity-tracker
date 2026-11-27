@@ -1,0 +1,51 @@
+@* Tasks waiting for a day: no planned day yet (or a later one), not due yet. *@
+@inherits TrackerComponentBase
+
+<section class="card backlog" data-testid="backlog" aria-label="Backlog">
+    <div class="card-head">
+        <h2>Backlog</h2>
+        @if (Tasks.Count > 0)
+        {
+            <span class="muted" data-testid="backlog-count">@Tasks.Count @(Tasks.Count == 1 ? "task" : "tasks")</span>
+        }
+    </div>
+
+    <form class="todo-add" @onsubmit="AddAsync">
+        <input class="input" placeholder="Add to the backlog" aria-label="New backlog task" maxlength="@TaskItem.MaxTitleLength"
+               data-testid="backlog-add-input" @bind="_draft" @bind:event="oninput" />
+        <button type="submit" class="btn primary round" aria-label="Add to the backlog" disabled="@string.IsNullOrWhiteSpace(_draft)"><NavIcon Name="plus" /></button>
+    </form>
+
+    @if (Tasks.Count == 0)
+    {
+        <p class="muted todo-empty">Nothing waiting. Tasks for no particular day go here; plan them for a day when you are ready.</p>
+    }
+    else
+    {
+        <ul class="todo-list">
+            @foreach (var task in Tasks)
+            {
+                <TaskRow @key="task.Id" Item="task" InBacklog="true" TestId="backlog-task"
+                         Tags="[Backlog.DueTag(task, Tracker.Today), Backlog.PlannedTag(task, Tracker.Today)]"
+                         State="@(Backlog.IsDueSoon(task, Tracker.Today) ? "soon" : null)" />
+            }
+        </ul>
+    }
+</section>
+
+@code {
+    private string _draft = "";
+
+    private IReadOnlyList<TaskItem> Tasks => Tracker.Backlog();
+
+    private async Task AddAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_draft))
+        {
+            return;
+        }
+
+        await Tracker.AddTaskAsync(_draft);
+        _draft = "";
+    }
+}

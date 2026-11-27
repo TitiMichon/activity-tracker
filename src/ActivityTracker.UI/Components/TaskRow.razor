@@ -1,0 +1,118 @@
+@* One task in a list (Today or the backlog): checkbox, title and badges; tapping the title opens rename, plan and delete. *@
+@inject TrackerService Tracker
+@inject ToastService Toasts
+
+<li class="todo @(Item.IsDone ? "done" : "") @State" data-testid="@TestId" @key="Item.Id">
+    <div class="todo-row">
+        <input type="checkbox" class="todo-check" checked="@Item.IsDone" aria-label="Done: @Item.Title" @onchange="OnDoneAsync" />
+        <button type="button" class="todo-title" aria-expanded="@(_editing ? "true" : "false")" @onclick="ToggleEdit">
+            <span>@Item.Title</span>
+            @foreach (var tag in Tags.Where(t => t is not null))
+            {
+                <span class="todo-tag" data-testid="task-tag">@tag</span>
+            }
+        </button>
+    </div>
+
+    @if (_editing)
+    {
+        <form class="todo-edit" data-testid="task-edit" @onsubmit="RenameAsync">
+            <input class="input" aria-label="Title" maxlength="@TaskItem.MaxTitleLength" @bind="_title" @bind:event="oninput" />
+            <div class="actions left">
+                <button type="submit" class="btn primary" disabled="@string.IsNullOrWhiteSpace(_title)">Save</button>
+                @if (InBacklog)
+                {
+                    <button type="button" class="btn" data-testid="task-plan-today" @onclick="() => PlanAsync(Tracker.Today)">Plan for today</button>
+                }
+                else if (CanGoBack)
+                {
+                    <button type="button" class="btn" data-testid="task-to-backlog" @onclick="() => PlanAsync(null)">Back to backlog</button>
+                }
+                <span class="spacer"></span>
+                <button type="button" class="btn ghost danger-text" data-testid="task-delete" @onclick="DeleteAsync">Delete</button>
+            </div>
+            @if (InBacklog)
+            {
+                <div class="todo-plan">
+                    <label for="plan-@Item.Id">Plan for a day</label>
+                    <input id="plan-@Item.Id" type="date" class="input" data-testid="task-plan-day" min="@Tracker.Today.ToString("yyyy-MM-dd")"
+                           @bind="_day" />
+                    <button type="button" class="btn" data-testid="task-plan-day-button" disabled="@(_day is null)"
+                            @onclick="() => PlanAsync(_day)">Plan</button>
+                </div>
+            }
+        </form>
+    }
+</li>
+
+@code {
+    [Parameter, EditorRequired] public TaskItem Item { get; set; } = default!;
+
+    /// <summary>Badges after the title (nulls are skipped).</summary>
+    [Parameter] public IEnumerable<string?> Tags { get; set; } = [];
+
+    /// <summary>Extra CSS class: "overdue" or "soon" color the badges.</summary>
+    [Parameter] public string? State { get; set; }
+
+    /// <summary>Backlog rows offer planning; Today rows offer sending back to the backlog.</summary>
+    [Parameter] public bool InBacklog { get; set; }
+
+    [Parameter] public string TestId { get; set; } = "day-task";
+
+    private bool _editing;
+    private string _title = "";
+    private DateOnly? _day;
+
+    /// <summary>On today's list only because it is planned (a due date would keep it there).</summary>
+    private bool CanGoBack => !Item.IsDone && Item.PlannedDay is not null
+        && TodayTasks.TimingOf(Item, Tracker.Today) is TaskTiming.Planned or TaskTiming.CarriedOver;
+
+    private void ToggleEdit()
+    {
+        _editing = !_editing;
+        _title = Item.Title;
+        _day = null;
+    }
+
+    private async Task OnDoneAsync(ChangeEventArgs e)
+    {
+        var done = e.Value is true;
+        await Tracker.SetTaskDoneAsync(Item.Id, done);
+        if (InBacklog && done)
+        {
+            var id = Item.Id;
+            Toasts.Show($"“{Item.Title}” done", "Undo", () => Tracker.SetTaskDoneAsync(id, false));
+        }
+    }
+
+    private async Task RenameAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_title))
+        {
+            return;
+        }
+
+        await Tracker.RenameTaskAsync(Item.Id, _title);
+        _editing = false;
+    }
+
+    private async Task PlanAsync(DateOnly? day)
+    {
+        var id = Item.Id;
+        var before = Item.PlannedDay;
+        _editing = false;
+        await Tracker.PlanTaskAsync(id, day);
+        var where = day is not { } d ? "moved to the backlog"
+            : d == Tracker.Today ? "planned for today"
+            : $"planned for {d:ddd d MMM}";
+        Toasts.Show($"“{Item.Title}” {where}", "Undo", () => Tracker.PlanTaskAsync(id, before));
+    }
+
+    private async Task DeleteAsync()
+    {
+        var task = Item;
+        _editing = false;
+        await Tracker.DeleteTaskAsync(task.Id);
+        Toasts.Show($"“{task.Title}” deleted", "Undo", () => Tracker.SaveTaskAsync(task));
+    }
+}
