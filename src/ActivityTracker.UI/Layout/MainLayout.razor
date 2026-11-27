@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @inject TrackerService Tracker
 @inject ReminderService Reminders
+@inject UpdateService Updates
 
 <div class="app">
     <header class="topbar">
@@ -15,6 +16,8 @@
             <NavLink class="nav-link" href="settings"><NavIcon Name="settings" /><span>Settings</span></NavLink>
         </nav>
     </header>
+
+    <UpdateBanner />
 
     <main class="content">
         @if (_loadError is not null)
@@ -47,6 +50,7 @@
         {
             await Tracker.EnsureLoadedAsync();
             Reminders.Start();
+            _ = Updates.StartAsync(); // in the background: never delays the app
         }
         catch (FormatException ex)
         {

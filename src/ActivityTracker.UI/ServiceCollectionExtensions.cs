@@ -16,6 +16,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<TrackerService>();
         services.AddSingleton<ToastService>();
         services.AddSingleton<ReminderService>();
+        services.AddSingleton<IReleaseSource>(_ => new GitHubReleases(GitHubReleases.CreateClient()));
+        services.AddSingleton<UpdateService>();
         return services;
     }
 
@@ -27,6 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IFileExporter, BrowserFileExporter>();
         services.AddSingleton<INotificationPlatform, BrowserNotificationPlatform>();
         services.AddSingleton<IReminderScheduler, NoReminderScheduler>();
+        services.AddSingleton<IAppUpdater, NoAppUpdater>(); // the service worker updates the web app
         return services;
     }
 }

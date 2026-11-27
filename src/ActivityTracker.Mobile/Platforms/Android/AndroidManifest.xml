@@ -4,4 +4,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Sets the reminder alarm again after a reboot (alarms do not survive it). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- In-app updates: hands the downloaded APK to the system installer (the user confirms each install). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 </manifest>
