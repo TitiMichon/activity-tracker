@@ -64,7 +64,12 @@ public sealed class AppFixture : IAsyncLifetime
         }
 
         _playwright = await Playwright.CreateAsync();
-        Browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
+        // The random port can be one Chromium refuses (e.g. 2049, NFS): ERR_UNSAFE_PORT.
+        Browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+        {
+            Headless = true,
+            Args = [$"--explicitly-allowed-ports={new Uri(BaseUrl).Port}"],
+        });
     }
 
     /// <summary>A fresh page with empty storage, at the home page with the app loaded.</summary>
