@@ -14,6 +14,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Changed
 
+- **More room on screen**: no more "Activity Tracker" bar. Today's title is the short date ("27 Nov"); tabs stay at the bottom on phones and move to a rail on the left on wider screens (#66).
 - **Data format v2** to store tasks. Your data is upgraded automatically the first time v1.2 opens, and backups from v1.0 and v1.1 still import. Backups made with v1.2 need v1.2 or later to import (#30).
 
 ### Fixed

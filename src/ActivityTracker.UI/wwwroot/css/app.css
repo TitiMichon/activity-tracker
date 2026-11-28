@@ -17,6 +17,7 @@
     --shadow: 0 1px 2px rgb(0 0 0 / 5%), 0 2px 8px rgb(0 0 0 / 4%);
     --cell: 13px;
     --nav-h: 64px;
+    --rail-w: 84px;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -60,45 +61,41 @@ ul.error { padding-left: 2rem; }
 h1:focus { outline: none; }
 
 /* ---------- Layout ---------- */
+/* No app bar: tabs at the bottom on phones, in a rail on the left on wider screens. */
 .app { min-height: 100vh; }
 
-.topbar {
-    position: sticky; top: 0; z-index: 20;
-    display: flex; align-items: center; gap: 1rem;
-    padding: .6rem 1.25rem;
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border);
-}
-
-.brand { font-weight: 700; color: var(--text); text-decoration: none; white-space: nowrap; }
-.brand-mark { color: var(--accent); }
-
-.nav { display: flex; gap: .25rem; margin-left: auto; }
+.nav { position: fixed; z-index: 30; display: flex; background: var(--surface); }
 
 .nav-link {
-    display: flex; align-items: center; gap: .4rem;
-    padding: .45rem .75rem; border-radius: 999px;
-    color: var(--muted); text-decoration: none; font-weight: 500;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: .45rem .5rem; border-radius: var(--radius-sm);
+    color: var(--muted); text-decoration: none; font-weight: 500; font-size: .72rem;
 }
 
 .nav-link:hover { background: var(--surface-2); color: var(--text); }
-.nav-link.active { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.nav-link.active { color: var(--accent); }
 
 .content { max-width: 1100px; margin: 0 auto; padding: 1.25rem 1.25rem 3rem; display: flex; flex-direction: column; gap: 1rem; }
 
-@media (max-width: 720px) {
-    /* backdrop-filter would make the topbar the containing block of the fixed bottom nav. */
-    .topbar { padding: .6rem 1rem; backdrop-filter: none; background: var(--surface); }
+@media (min-width: 721px) {
+    .app { padding-left: var(--rail-w); }
     .nav {
-        position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+        top: 0; bottom: 0; left: 0; width: var(--rail-w);
+        flex-direction: column; gap: .35rem; padding: 1rem .4rem;
+        border-right: 1px solid var(--border);
+    }
+    .nav-link.active { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+}
+
+@media (max-width: 720px) {
+    .nav {
+        left: 0; right: 0; bottom: 0;
         height: calc(var(--nav-h) + env(safe-area-inset-bottom));
         padding: 0 .25rem env(safe-area-inset-bottom);
-        justify-content: space-around; gap: 0;
-        background: var(--surface); border-top: 1px solid var(--border);
+        justify-content: space-around;
+        border-top: 1px solid var(--border);
     }
-    .nav-link { flex-direction: column; gap: 2px; font-size: .7rem; padding: .4rem .5rem; border-radius: var(--radius-sm); flex: 1; }
-    .nav-link.active { background: none; }
+    .nav-link { justify-content: center; flex: 1; }
     .content { padding: 1rem 1rem calc(var(--nav-h) + 2rem); }
 }
 

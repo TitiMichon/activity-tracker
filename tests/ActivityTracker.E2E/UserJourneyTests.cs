@@ -39,7 +39,7 @@ public class UserJourneyTests(AppFixture app)
     {
         var page = await app.NewPageAsync();
 
-        await Expect(page.Locator("h1")).ToHaveTextAsync("Today");
+        await Expect(page.GetByTestId("today-title")).ToHaveTextAsync(DateTime.Today.ToString("d MMM", System.Globalization.CultureInfo.InvariantCulture));
         await Expect(page.GetByText("No activities yet.")).ToBeVisibleAsync();
     }
 
